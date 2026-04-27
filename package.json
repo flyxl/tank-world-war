@@ -1,0 +1,25 @@
+{
+  "name": "tank",
+  "version": "1.0.0",
+  "description": "坦克世界大战 3D Game",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@babylonjs/core": "^9.4.1",
+    "@babylonjs/gui": "^9.4.1",
+    "@babylonjs/loaders": "^9.4.1",
+    "@babylonjs/materials": "^9.4.1",
+    "nipplejs": "^1.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10"
+  }
+}
