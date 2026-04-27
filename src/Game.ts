@@ -111,36 +111,55 @@ export class Game {
   }
 
   private setupBattleLighting(): void {
-    this.scene.environmentIntensity = 0;
+    this.scene.environmentIntensity = 0.3;
+    this.scene.ambientColor = new Color3(0.25, 0.28, 0.35);
 
-    const hemiLight = new HemisphericLight('hemiLight', new Vector3(0, 1, 0), this.scene);
-    hemiLight.intensity = 1.0;
-    hemiLight.groundColor = new Color3(0.4, 0.4, 0.45);
-    hemiLight.specular = new Color3(0.2, 0.2, 0.2);
+    const hemiLight = new HemisphericLight('hemiLight', new Vector3(0.2, 1, 0.1), this.scene);
+    hemiLight.intensity = 0.9;
+    hemiLight.groundColor = new Color3(0.35, 0.38, 0.4);
+    hemiLight.specular = new Color3(0.15, 0.15, 0.18);
+    hemiLight.diffuse = new Color3(0.75, 0.82, 0.9);
 
-    const sunLight = new DirectionalLight('sunLight', new Vector3(-1, -2, -1).normalize(), this.scene);
-    sunLight.intensity = 2.5;
-    sunLight.diffuse = new Color3(1, 0.95, 0.85);
-    sunLight.specular = new Color3(0.5, 0.5, 0.5);
+    const sunLight = new DirectionalLight('sunLight', new Vector3(-0.7, -1.5, -0.5).normalize(), this.scene);
+    sunLight.intensity = 2.0;
+    sunLight.diffuse = new Color3(1, 0.92, 0.78);
+    sunLight.specular = new Color3(0.6, 0.55, 0.45);
+
+    const fillLight = new DirectionalLight('fillLight', new Vector3(0.5, -0.8, 0.3).normalize(), this.scene);
+    fillLight.intensity = 0.5;
+    fillLight.diffuse = new Color3(0.6, 0.7, 0.85);
+    fillLight.specular = new Color3(0.1, 0.1, 0.1);
+
+    this.scene.fogMode = Scene.FOGMODE_EXP2;
+    this.scene.fogDensity = 0.0012;
+    this.scene.fogColor = new Color3(0.7, 0.75, 0.8);
   }
 
   private setupBattlePostProcessing(): void {
     const pipeline = new DefaultRenderingPipeline('defaultPipeline', true, this.scene, [this.scene.activeCamera!]);
     pipeline.bloomEnabled = true;
-    pipeline.bloomThreshold = 0.7;
-    pipeline.bloomWeight = 0.3;
+    pipeline.bloomThreshold = 0.6;
+    pipeline.bloomWeight = 0.35;
     pipeline.bloomKernel = 64;
     pipeline.bloomScale = 0.5;
     pipeline.fxaaEnabled = true;
 
+    pipeline.imageProcessingEnabled = true;
+    pipeline.imageProcessing.toneMappingEnabled = true;
+    pipeline.imageProcessing.toneMappingType = 1;
+    pipeline.imageProcessing.contrast = 1.15;
+    pipeline.imageProcessing.exposure = 1.1;
+
     if (!DeviceDetector.isMobile()) {
-      pipeline.imageProcessingEnabled = true;
-      pipeline.imageProcessing.toneMappingEnabled = true;
-      pipeline.imageProcessing.toneMappingType = 1;
       pipeline.imageProcessing.vignetteEnabled = true;
-      pipeline.imageProcessing.vignetteWeight = 1.5;
-      pipeline.imageProcessing.contrast = 1.1;
-      pipeline.imageProcessing.exposure = 1.05;
+      pipeline.imageProcessing.vignetteWeight = 1.2;
+      pipeline.chromaticAberrationEnabled = true;
+      pipeline.chromaticAberration.aberrationAmount = 15;
+      pipeline.grainEnabled = true;
+      pipeline.grain.intensity = 8;
+      pipeline.grain.animated = true;
+      pipeline.sharpenEnabled = true;
+      pipeline.sharpen.edgeAmount = 0.2;
     }
   }
 
