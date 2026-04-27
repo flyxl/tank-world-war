@@ -57,6 +57,8 @@ export class Pickup {
   private floatOffset: number;
   private config: PickupConfig;
 
+  private baseY: number;
+
   constructor(scene: Scene, type: PickupType, position: Vector3) {
     this.scene = scene;
     this.type = type;
@@ -65,7 +67,8 @@ export class Pickup {
 
     this.root = new TransformNode('pickup_' + type, scene);
     this.root.position = position.clone();
-    this.root.position.y += 1;
+    this.baseY = position.y + 1.8;
+    this.root.position.y = this.baseY;
 
     this.buildModel();
   }
@@ -213,7 +216,7 @@ export class Pickup {
   update(dt: number, time: number): void {
     if (this.collected) return;
     this.root.rotation.y += dt * 1.5;
-    this.root.position.y = 1 + Math.sin(time * 2 + this.floatOffset) * 0.3;
+    this.root.position.y = this.baseY + Math.sin(time * 2 + this.floatOffset) * 0.25;
   }
 
   collect(): void {

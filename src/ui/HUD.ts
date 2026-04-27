@@ -318,11 +318,11 @@ export class HUD {
       if (!pos) continue;
 
       const dot = new Ellipse('eDot');
-      dot.width = '7px';
-      dot.height = '7px';
+      dot.width = '12px';
+      dot.height = '12px';
       dot.background = '#e74c3c';
-      dot.thickness = 1;
-      dot.color = 'rgba(255,100,100,0.5)';
+      dot.thickness = 2;
+      dot.color = 'rgba(255,200,200,0.6)';
       dot.left = pos.x;
       dot.top = pos.y;
       this.minimapContainer.addControl(dot);
