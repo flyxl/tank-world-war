@@ -264,6 +264,7 @@ export class Game {
     this.hud = new HUD(this.scene);
     this.hud.setPlayer(this.player);
     this.hud.setEnemies(this.enemies);
+    this.hud.setPickups(this.pickups);
 
     for (let i = 0; i < 3; i++) {
       this.spawnPickup();

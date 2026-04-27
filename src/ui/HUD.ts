@@ -6,6 +6,7 @@ import { Ellipse } from '@babylonjs/gui/2D/controls/ellipse';
 import { Scene } from '@babylonjs/core/scene';
 import { PlayerTank } from '../entities/PlayerTank';
 import { Tank } from '../entities/Tank';
+import { Pickup } from '../entities/Pickup';
 
 interface EnemyHealthBar {
   container: Rectangle;
@@ -24,10 +25,12 @@ export class HUD {
   private enemiesText!: TextBlock;
   private container!: Rectangle;
   private minimapContainer!: Rectangle;
-  private minimapDots: Rectangle[] = [];
+  private minimapDots: (Rectangle | Ellipse)[] = [];
+  private minimapPlayerArrow!: Rectangle;
 
   private player: PlayerTank | null = null;
   private enemies: Tank[] = [];
+  private pickups: Pickup[] = [];
   private enemyBars: EnemyHealthBar[] = [];
   private kills = 0;
 
@@ -161,25 +164,40 @@ export class HUD {
 
   private buildMinimap(): void {
     this.minimapContainer = new Rectangle('minimap');
-    this.minimapContainer.width = '140px';
-    this.minimapContainer.height = '140px';
-    this.minimapContainer.cornerRadius = 8;
-    this.minimapContainer.background = 'rgba(0,0,0,0.5)';
+    this.minimapContainer.width = '160px';
+    this.minimapContainer.height = '160px';
+    this.minimapContainer.cornerRadius = 80;
+    this.minimapContainer.background = 'rgba(0,0,0,0.55)';
     this.minimapContainer.thickness = 2;
-    this.minimapContainer.color = 'rgba(255,255,255,0.3)';
+    this.minimapContainer.color = 'rgba(255,255,255,0.25)';
     this.minimapContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
     this.minimapContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    this.minimapContainer.top = 15;
-    this.minimapContainer.left = 15;
+    this.minimapContainer.top = 10;
+    this.minimapContainer.left = 10;
     this.container.addControl(this.minimapContainer);
 
-    const mapLabel = new TextBlock('mapLabel');
-    mapLabel.text = '小地图';
-    mapLabel.color = 'rgba(255,255,255,0.5)';
-    mapLabel.fontSize = 10;
-    mapLabel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-    mapLabel.top = 3;
-    this.minimapContainer.addControl(mapLabel);
+    this.minimapPlayerArrow = new Rectangle('playerArrow');
+    this.minimapPlayerArrow.width = '8px';
+    this.minimapPlayerArrow.height = '12px';
+    this.minimapPlayerArrow.background = '#2ecc71';
+    this.minimapPlayerArrow.thickness = 1;
+    this.minimapPlayerArrow.color = '#fff';
+    this.minimapPlayerArrow.cornerRadius = 2;
+    this.minimapContainer.addControl(this.minimapPlayerArrow);
+
+    const ring = new Ellipse('compassRing');
+    ring.width = '152px';
+    ring.height = '152px';
+    ring.thickness = 1;
+    ring.color = 'rgba(255,255,255,0.15)';
+    this.minimapContainer.addControl(ring);
+
+    const innerRing = new Ellipse('innerRing');
+    innerRing.width = '76px';
+    innerRing.height = '76px';
+    innerRing.thickness = 1;
+    innerRing.color = 'rgba(255,255,255,0.08)';
+    this.minimapContainer.addControl(innerRing);
   }
 
   setPlayer(player: PlayerTank): void {
@@ -189,6 +207,10 @@ export class HUD {
   setEnemies(enemies: Tank[]): void {
     this.enemies = enemies;
     this.createEnemyHealthBars();
+  }
+
+  setPickups(pickups: Pickup[]): void {
+    this.pickups = pickups;
   }
 
   private createEnemyHealthBars(): void {
@@ -284,32 +306,57 @@ export class HUD {
 
     if (!this.player) return;
 
-    const mapScale = 140 / 200;
-
-    const playerDot = new Rectangle('pDot');
-    playerDot.width = '6px';
-    playerDot.height = '6px';
-    playerDot.background = '#2ecc71';
-    playerDot.thickness = 0;
-    playerDot.cornerRadius = 3;
-    playerDot.left = this.player.root.position.x * mapScale;
-    playerDot.top = -this.player.root.position.z * mapScale;
-    this.minimapContainer.addControl(playerDot);
-    this.minimapDots.push(playerDot);
+    const viewRange = 80;
+    const mapRadius = 70;
+    const playerRot = this.player.root.rotation.y;
+    const px = this.player.root.position.x;
+    const pz = this.player.root.position.z;
 
     for (const enemy of this.enemies) {
       if (!enemy.isAlive) continue;
-      const dot = new Rectangle('eDot');
-      dot.width = '5px';
-      dot.height = '5px';
+      const pos = this.worldToMinimap(enemy.root.position.x - px, enemy.root.position.z - pz, playerRot, viewRange, mapRadius);
+      if (!pos) continue;
+
+      const dot = new Ellipse('eDot');
+      dot.width = '7px';
+      dot.height = '7px';
       dot.background = '#e74c3c';
-      dot.thickness = 0;
-      dot.cornerRadius = 2.5;
-      dot.left = enemy.root.position.x * mapScale;
-      dot.top = -enemy.root.position.z * mapScale;
+      dot.thickness = 1;
+      dot.color = 'rgba(255,100,100,0.5)';
+      dot.left = pos.x;
+      dot.top = pos.y;
       this.minimapContainer.addControl(dot);
       this.minimapDots.push(dot);
     }
+
+    for (const pickup of this.pickups) {
+      if (pickup.collected) continue;
+      const pos = this.worldToMinimap(pickup.root.position.x - px, pickup.root.position.z - pz, playerRot, viewRange, mapRadius);
+      if (!pos) continue;
+
+      const dot = new Ellipse('pDot');
+      dot.width = '5px';
+      dot.height = '5px';
+      dot.background = '#f1c40f';
+      dot.thickness = 0;
+      dot.left = pos.x;
+      dot.top = pos.y;
+      this.minimapContainer.addControl(dot);
+      this.minimapDots.push(dot);
+    }
+  }
+
+  private worldToMinimap(dx: number, dz: number, rot: number, range: number, radius: number): { x: number; y: number } | null {
+    const cos = Math.cos(-rot);
+    const sin = Math.sin(-rot);
+    const rx = dx * cos - dz * sin;
+    const ry = -(dx * sin + dz * cos);
+
+    const dist = Math.sqrt(rx * rx + ry * ry);
+    if (dist > range) return null;
+
+    const scale = radius / range;
+    return { x: rx * scale, y: ry * scale };
   }
 
   show(): void {
