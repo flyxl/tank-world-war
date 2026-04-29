@@ -67,6 +67,8 @@ export class Game {
   private activeBuff: { type: PickupType; remaining: number; originalValue: number } | null = null;
   private buffIndicator: HTMLElement | null = null;
 
+  private battlePipeline: DefaultRenderingPipeline | null = null;
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.engine = new Engine(canvas, true, {
@@ -124,12 +126,20 @@ export class Game {
     fillLight.specular = new Color3(0.1, 0.1, 0.1);
 
     this.scene.fogMode = Scene.FOGMODE_EXP2;
-    this.scene.fogDensity = 0.0012;
+    this.scene.fogDensity = 0.0007;
     this.scene.fogColor = new Color3(0.7, 0.75, 0.8);
   }
 
   private setupBattlePostProcessing(): void {
-    const pipeline = new DefaultRenderingPipeline('defaultPipeline', true, this.scene, [this.scene.activeCamera!]);
+    this.battlePipeline?.dispose();
+    this.battlePipeline = null;
+
+    const cam = this.scene.activeCamera;
+    if (!cam) return;
+
+    // hdr=false：部分环境下 HDR 管线会导致画面全黑/异常；重复进入战斗需先释放旧管线
+    const pipeline = new DefaultRenderingPipeline('defaultPipeline', false, this.scene, [cam]);
+    this.battlePipeline = pipeline;
     pipeline.bloomEnabled = true;
     pipeline.bloomThreshold = 0.6;
     pipeline.bloomWeight = 0.35;
@@ -571,6 +581,9 @@ export class Game {
   }
 
   private cleanupBattle(): void {
+    this.battlePipeline?.dispose();
+    this.battlePipeline = null;
+
     this.hud?.dispose();
     this.hud = null;
 

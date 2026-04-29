@@ -67,7 +67,7 @@ export class PlayerTank extends Tank {
     this.turret.parent = modelOrient;
 
     for (const mesh of meshes) {
-      mesh.refreshBoundingInfo(true);
+      mesh.refreshBoundingInfo(false, false);
       const nm = mesh.name.toLowerCase();
       if (nm.includes('turret')) {
         mesh.parent = this.turret;
@@ -92,18 +92,33 @@ export class PlayerTank extends Tank {
     this.barrel.isVisible = false;
     this.barrel.isPickable = false;
 
+    this.root.computeWorldMatrix(true);
+    for (const mesh of meshes) {
+      mesh.computeWorldMatrix(true);
+    }
+
     const ref = Math.max(this.config.bodyScale.x, this.config.bodyScale.z) * 0.92;
     const modelLen = this.estimateTankFootprintXZ(meshes);
-    if (modelLen > 1e-3 && ref > 1e-3) {
-      const s = ref / modelLen;
+    if (Number.isFinite(modelLen) && Number.isFinite(ref) && modelLen > 0.05 && modelLen < 400 && ref > 1e-3) {
+      let s = ref / modelLen;
+      s = Math.min(6, Math.max(0.08, s));
       this.root.scaling.scaleInPlace(s);
     }
 
     this.root.computeWorldMatrix(true);
     const bottomY = this.getWorldBottomYUnderRoot();
     const terrainY = map.getHeightAt(this.root.position.x, this.root.position.z);
-    this.root.position.y += terrainY - bottomY + 0.06;
-    this.terrainYOffset = this.root.position.y - map.getHeightAt(this.root.position.x, this.root.position.z);
+    if (Number.isFinite(bottomY) && Number.isFinite(terrainY)) {
+      this.root.position.y += terrainY - bottomY + 0.06;
+    }
+    const hSample = map.getHeightAt(this.root.position.x, this.root.position.z);
+    let yo = this.root.position.y - hSample;
+    if (!Number.isFinite(yo)) yo = 0;
+    this.terrainYOffset = Math.max(-30, Math.min(30, yo));
+
+    if (!Number.isFinite(this.root.position.x)) this.root.position.x = 0;
+    if (!Number.isFinite(this.root.position.y)) this.root.position.y = terrainY;
+    if (!Number.isFinite(this.root.position.z)) this.root.position.z = 0;
   }
 
   private estimateTankFootprintXZ(meshes: Mesh[]): number {
@@ -117,24 +132,27 @@ export class PlayerTank extends Tank {
       if (!bi) continue;
       const mn = bi.boundingBox.minimumWorld;
       const mx = bi.boundingBox.maximumWorld;
+      if (![mn.x, mn.y, mn.z, mx.x, mx.y, mx.z].every(Number.isFinite)) continue;
       minX = Math.min(minX, mn.x);
       maxX = Math.max(maxX, mx.x);
       minZ = Math.min(minZ, mn.z);
       maxZ = Math.max(maxZ, mx.z);
     }
-    return Math.max(maxX - minX, maxZ - minZ);
+    const span = Math.max(maxX - minX, maxZ - minZ);
+    return Number.isFinite(span) && span > 0 ? span : 2.5;
   }
 
   private getWorldBottomYUnderRoot(): number {
     let y = Infinity;
     for (const m of this.root.getChildMeshes(true)) {
-      if (!m.isVisible) continue;
+      if (m.isDisposed()) continue;
       m.computeWorldMatrix(true);
       const bi = m.getBoundingInfo();
       if (!bi) continue;
-      y = Math.min(y, bi.boundingBox.minimumWorld.y);
+      const wy = bi.boundingBox.minimumWorld.y;
+      if (Number.isFinite(wy)) y = Math.min(y, wy);
     }
-    return y;
+    return Number.isFinite(y) ? y : this.root.position.y;
   }
 
   private placeFirePointFromTurretMesh(): void {
