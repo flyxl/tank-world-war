@@ -20,6 +20,19 @@ export class TankModelLoader {
     return idx >= 0 ? path.substring(idx).toLowerCase() : '';
   }
 
+  /** SceneLoader needs directory URL + filename so OBJ MTL and textures resolve. */
+  static splitModelPath(modelPath: string): { rootUrl: string; fileName: string } {
+    const normalized = modelPath.replace(/\\/g, '/');
+    const lastSlash = normalized.lastIndexOf('/');
+    if (lastSlash < 0) {
+      return { rootUrl: '/', fileName: normalized };
+    }
+    return {
+      rootUrl: normalized.substring(0, lastSlash + 1),
+      fileName: normalized.substring(lastSlash + 1),
+    };
+  }
+
   /**
    * STL files have no material data; OBJ files may lack .mtl.
    * Apply a default PBR military-green material to any mesh without one.
@@ -45,7 +58,8 @@ export class TankModelLoader {
     }
 
     try {
-      const result = await SceneLoader.ImportMeshAsync('', modelPath, '', scene);
+      const { rootUrl, fileName } = this.splitModelPath(modelPath);
+      const result = await SceneLoader.ImportMeshAsync('', rootUrl, fileName, scene);
 
       if (result.meshes.length === 0) return null;
 

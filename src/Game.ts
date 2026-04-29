@@ -164,7 +164,9 @@ export class Game {
     }
 
     const callbacks: MenuCallbacks = {
-      onStartBattle: (mapId, tankType) => this.startBattle(mapId, tankType),
+      onStartBattle: (mapId, tankType) => {
+        void this.startBattle(mapId, tankType);
+      },
       onOpenGarage: () => this.showGarage(),
       onSettings: () => {},
     };
@@ -185,7 +187,7 @@ export class Game {
     }, this.scene);
   }
 
-  private startBattle(mapId: string, tankType: string): void {
+  private async startBattle(mapId: string, tankType: string): Promise<void> {
     this.state = GameState.BATTLE;
     this.kills = 0;
 
@@ -234,6 +236,8 @@ export class Game {
     this.player.config.reloadTime = modStats.reloadTime;
 
     this.player.attachCamera(this.camera);
+
+    await this.player.applyExternalPlayerModel(this.mapManager);
 
     this.enemies = [];
     this.previousEnemyAlive.clear();
