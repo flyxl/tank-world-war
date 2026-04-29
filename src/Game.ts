@@ -292,7 +292,7 @@ export class Game {
     this.resolveCollisions(this.player);
 
     const playerY = this.mapManager.getHeightAt(this.player.root.position.x, this.player.root.position.z);
-    this.player.root.position.y = playerY;
+    this.player.root.position.y = playerY + this.player.terrainYOffset;
 
     this.camera.update(inputState, dt);
 

@@ -83,6 +83,8 @@ export class Tank {
   reloadTimer = 0;
   isAlive = true;
   velocity = 0;
+  /** 相对 `getHeightAt` 的 root Y 修正；外部模型贴地后非 0，每帧与地形同步 */
+  terrainYOffset = 0;
 
   protected scene: Scene;
 

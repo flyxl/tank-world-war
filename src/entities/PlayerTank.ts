@@ -58,15 +58,21 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
+    // 3ds Max 导出 OBJ 常为 Z 轴向上，Babylon 为 Y 向上；绕 X -90° 将车体立在地面上
+    const modelOrient = new TransformNode(this.tankId + '_modelOrient', this.scene);
+    modelOrient.parent = this.root;
+    modelOrient.rotation.x = -Math.PI / 2;
+
     this.turret = new TransformNode(this.tankId + '_turretPivot', this.scene);
-    this.turret.parent = this.root;
+    this.turret.parent = modelOrient;
 
     for (const mesh of meshes) {
+      mesh.refreshBoundingInfo(true);
       const nm = mesh.name.toLowerCase();
       if (nm.includes('turret')) {
         mesh.parent = this.turret;
       } else {
-        mesh.parent = this.root;
+        mesh.parent = modelOrient;
       }
     }
 
@@ -97,6 +103,7 @@ export class PlayerTank extends Tank {
     const bottomY = this.getWorldBottomYUnderRoot();
     const terrainY = map.getHeightAt(this.root.position.x, this.root.position.z);
     this.root.position.y += terrainY - bottomY + 0.06;
+    this.terrainYOffset = this.root.position.y - map.getHeightAt(this.root.position.x, this.root.position.z);
   }
 
   private estimateTankFootprintXZ(meshes: Mesh[]): number {
