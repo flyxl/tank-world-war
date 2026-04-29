@@ -58,13 +58,9 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
-    // 3ds Max 导出 OBJ 常为 Z 轴向上，Babylon 为 Y 向上；绕 X -90° 将车体立在地面上
-    const modelOrient = new TransformNode(this.tankId + '_modelOrient', this.scene);
-    modelOrient.parent = this.root;
-    modelOrient.rotation.x = -Math.PI / 2;
-
+    // 本 OBJ 顶点已是 Y 向上（y 为车高、z 为纵向），勿再绕 X 旋转；否则会整车侧翻「翻车」
     this.turret = new TransformNode(this.tankId + '_turretPivot', this.scene);
-    this.turret.parent = modelOrient;
+    this.turret.parent = this.root;
 
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
@@ -72,7 +68,7 @@ export class PlayerTank extends Tank {
       if (nm.includes('turret')) {
         mesh.parent = this.turret;
       } else {
-        mesh.parent = modelOrient;
+        mesh.parent = this.root;
       }
     }
 
