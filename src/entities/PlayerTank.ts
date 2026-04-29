@@ -58,9 +58,13 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
-    // 本 OBJ 顶点已是 Y 向上（y 为车高、z 为纵向），勿再绕 X 旋转；否则会整车侧翻「翻车」
+    // 部分 Wavefront 导入后视觉上「倒扣」在地：绕 X 转 180° 翻正（与 -90° 侧翻不同）
+    const meshUpFix = new TransformNode(this.tankId + '_meshUpFix', this.scene);
+    meshUpFix.parent = this.root;
+    meshUpFix.rotation.x = Math.PI;
+
     this.turret = new TransformNode(this.tankId + '_turretPivot', this.scene);
-    this.turret.parent = this.root;
+    this.turret.parent = meshUpFix;
 
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
@@ -68,7 +72,7 @@ export class PlayerTank extends Tank {
       if (nm.includes('turret')) {
         mesh.parent = this.turret;
       } else {
-        mesh.parent = this.root;
+        mesh.parent = meshUpFix;
       }
     }
 
