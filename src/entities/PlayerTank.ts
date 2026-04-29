@@ -12,15 +12,11 @@ import { MathUtils } from '../utils/MathUtils';
 import type { InputState } from '../core/InputManager';
 import type { CameraSystem } from '../core/CameraSystem';
 import type { MapManager } from '../world/MapManager';
-import { OBJFileLoader } from '@babylonjs/loaders/OBJ/objFileLoader';
 import { TankModelLoader } from './TankModelLoader';
 
 /** OBJ under `public/` — served from `import.meta.env.BASE_URL`. */
 export const PLAYER_EXTERNAL_MODEL_REL =
   'models/WWII_Tank_Germany_Panzer_III_v1/14077_WWII_Tank_Germany_Panzer_III_v1_L2.obj';
-
-/** guruware OBJ 常见需 Y 镜像；若仍倒伏可改为 `false` 再试 */
-const PLAYER_OBJ_USE_INVERT_Y = true;
 
 export class PlayerTank extends Tank {
   private cameraSystem: CameraSystem | null = null;
@@ -43,15 +39,11 @@ export class PlayerTank extends Tank {
     const { rootUrl, fileName } = TankModelLoader.splitModelPath(modelUrl);
 
     let result;
-    const prevInvertY = OBJFileLoader.INVERT_Y;
-    if (PLAYER_OBJ_USE_INVERT_Y) OBJFileLoader.INVERT_Y = true;
     try {
       result = await SceneLoader.ImportMeshAsync('', rootUrl, fileName, this.scene);
     } catch (e) {
       console.warn('[PlayerTank] External model load failed, using procedural mesh.', e);
       return;
-    } finally {
-      OBJFileLoader.INVERT_Y = prevInvertY;
     }
 
     const meshes = result.meshes.filter(
@@ -66,9 +58,12 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
-    // guruware / 3ds Max 部分 OBJ 在 Babylon 里会上下颠倒；用 OBJFileLoader.INVERT_Y（每 mesh scaling.y 取反）比父节点硬转更稳
+    // 合并包围盒：最长边应对齐地面水平（XZ），否则绕轴转 90°；比固定 INVERT_Y/180° 更稳
+    const orient = new TransformNode(this.tankId + '_autoOrient', this.scene);
+    orient.parent = this.root;
+
     this.turret = new TransformNode(this.tankId + '_turretPivot', this.scene);
-    this.turret.parent = this.root;
+    this.turret.parent = orient;
 
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
@@ -76,8 +71,41 @@ export class PlayerTank extends Tank {
       if (nm.includes('turret')) {
         mesh.parent = this.turret;
       } else {
-        mesh.parent = this.root;
+        mesh.parent = orient;
       }
+    }
+
+    orient.rotation.set(0, 0, 0);
+    this.turret.rotation.set(0, 0, 0);
+    orient.computeWorldMatrix(true);
+    for (const mesh of meshes) {
+      mesh.computeWorldMatrix(true);
+    }
+
+    const hullMesh = meshes.find((m) => m.name.toLowerCase().includes('hull')) as Mesh | undefined;
+    if (hullMesh) {
+      hullMesh.refreshBoundingInfo(false, false);
+      const b = hullMesh.getBoundingInfo().boundingBox;
+      const sx = Math.abs(b.maximum.x - b.minimum.x);
+      const sy = Math.abs(b.maximum.y - b.minimum.y);
+      const sz = Math.abs(b.maximum.z - b.minimum.z);
+      const m = Math.max(sx, sy, sz, 1e-6);
+      const eps = 0.08 * m;
+      const yIsShortest = sy <= sx + eps && sy <= sz + eps;
+      const zIsLongest = sz >= sx - eps && sz >= sy - eps;
+      if (yIsShortest && zIsLongest) {
+        // 常见战车：车高最短、车长沿 Z；此 OBJ 常整体倒扣，绕 X 翻 180° 立正
+        orient.rotation.x = Math.PI;
+      } else if (sy >= sx - eps && sy >= sz - eps) {
+        orient.rotation.x = Math.PI / 2;
+      } else if (sx >= sy - eps && sx >= sz - eps) {
+        orient.rotation.z = Math.PI / 2;
+      }
+    }
+
+    orient.computeWorldMatrix(true);
+    for (const mesh of meshes) {
+      mesh.computeWorldMatrix(true);
     }
 
     this.body =
