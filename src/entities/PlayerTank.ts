@@ -12,6 +12,7 @@ import { MathUtils } from '../utils/MathUtils';
 import type { InputState } from '../core/InputManager';
 import type { CameraSystem } from '../core/CameraSystem';
 import type { MapManager } from '../world/MapManager';
+import { OBJFileLoader } from '@babylonjs/loaders/OBJ/objFileLoader';
 import { TankModelLoader } from './TankModelLoader';
 
 /** OBJ under `public/` — served from `import.meta.env.BASE_URL`. */
@@ -39,11 +40,15 @@ export class PlayerTank extends Tank {
     const { rootUrl, fileName } = TankModelLoader.splitModelPath(modelUrl);
 
     let result;
+    const prevInvertY = OBJFileLoader.INVERT_Y;
+    OBJFileLoader.INVERT_Y = true;
     try {
       result = await SceneLoader.ImportMeshAsync('', rootUrl, fileName, this.scene);
     } catch (e) {
       console.warn('[PlayerTank] External model load failed, using procedural mesh.', e);
       return;
+    } finally {
+      OBJFileLoader.INVERT_Y = prevInvertY;
     }
 
     const meshes = result.meshes.filter(
@@ -58,13 +63,9 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
-    // 部分 Wavefront 导入后视觉上「倒扣」在地：绕 X 转 180° 翻正（与 -90° 侧翻不同）
-    const meshUpFix = new TransformNode(this.tankId + '_meshUpFix', this.scene);
-    meshUpFix.parent = this.root;
-    meshUpFix.rotation.x = Math.PI;
-
+    // guruware / 3ds Max 部分 OBJ 在 Babylon 里会上下颠倒；用 OBJFileLoader.INVERT_Y（每 mesh scaling.y 取反）比父节点硬转更稳
     this.turret = new TransformNode(this.tankId + '_turretPivot', this.scene);
-    this.turret.parent = meshUpFix;
+    this.turret.parent = this.root;
 
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
@@ -72,7 +73,7 @@ export class PlayerTank extends Tank {
       if (nm.includes('turret')) {
         mesh.parent = this.turret;
       } else {
-        mesh.parent = meshUpFix;
+        mesh.parent = this.root;
       }
     }
 
