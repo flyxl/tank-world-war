@@ -19,6 +19,9 @@ import { TankModelLoader } from './TankModelLoader';
 export const PLAYER_EXTERNAL_MODEL_REL =
   'models/WWII_Tank_Germany_Panzer_III_v1/14077_WWII_Tank_Germany_Panzer_III_v1_L2.obj';
 
+/** guruware OBJ 常见需 Y 镜像；若仍倒伏可改为 `false` 再试 */
+const PLAYER_OBJ_USE_INVERT_Y = true;
+
 export class PlayerTank extends Tank {
   private cameraSystem: CameraSystem | null = null;
 
@@ -41,7 +44,7 @@ export class PlayerTank extends Tank {
 
     let result;
     const prevInvertY = OBJFileLoader.INVERT_Y;
-    OBJFileLoader.INVERT_Y = true;
+    if (PLAYER_OBJ_USE_INVERT_Y) OBJFileLoader.INVERT_Y = true;
     try {
       result = await SceneLoader.ImportMeshAsync('', rootUrl, fileName, this.scene);
     } catch (e) {
