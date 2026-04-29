@@ -237,8 +237,6 @@ export class Game {
 
     this.player.attachCamera(this.camera);
 
-    await this.player.applyExternalPlayerModel(this.mapManager);
-
     this.enemies = [];
     this.previousEnemyAlive.clear();
     const enemyTypes = ['light', 'medium', 'heavy', 'medium', 'destroyer'];
@@ -266,6 +264,9 @@ export class Game {
     for (let i = 0; i < 3; i++) {
       this.spawnPickup();
     }
+
+    // 必须在 BATTLE 且敌军已注册之后再 await，否则加载期间 getAliveCount()===0 会误判胜利
+    await this.player.applyExternalPlayerModel(this.mapManager);
   }
 
   private gameLoop(): void {
