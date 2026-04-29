@@ -1,7 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
+import { Scene, Vector3, Color3, ShadowGenerator } from '@babylonjs/core';
 import { Terrain, TerrainConfig } from './Terrain';
 import { SkyboxManager, SkyTheme } from './SkyboxManager';
 import { Environment, EnvTheme } from './Environment';

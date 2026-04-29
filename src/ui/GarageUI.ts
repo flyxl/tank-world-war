@@ -1,4 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
+import { Scene } from '@babylonjs/core';
 import { UpgradeSystem, TankUpgrades } from '../systems/UpgradeSystem';
 import { TANK_CONFIGS } from '../entities/Tank';
 

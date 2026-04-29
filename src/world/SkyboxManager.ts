@@ -1,10 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
-import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
-import { Texture } from '@babylonjs/core/Materials/Textures/texture';
-import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
-import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { Scene, MeshBuilder, StandardMaterial, Color3, Color4, Texture, DynamicTexture, Mesh } from '@babylonjs/core';
 
 export type SkyTheme = 'desert' | 'urban' | 'forest' | 'snow';
 

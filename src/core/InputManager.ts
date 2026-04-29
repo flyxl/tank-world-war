@@ -1,5 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { Vector2 } from '@babylonjs/core/Maths/math.vector';
+import { Scene, Vector2 } from '@babylonjs/core';
 import { DeviceDetector } from '../utils/DeviceDetector';
 
 export interface InputState {

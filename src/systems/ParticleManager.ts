@@ -1,8 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { Color4 } from '@babylonjs/core/Maths/math.color';
-import { Texture } from '@babylonjs/core/Materials/Textures/texture';
+import { Scene, ParticleSystem, Vector3, Color4, Texture } from '@babylonjs/core';
 
 export class ParticleManager {
   private activeSystems: ParticleSystem[] = [];

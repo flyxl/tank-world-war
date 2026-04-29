@@ -1,4 +1,4 @@
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Vector3 } from '@babylonjs/core';
 
 export class MathUtils {
   static clamp(value: number, min: number, max: number): number {

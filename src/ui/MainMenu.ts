@@ -1,4 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
+import { Scene } from '@babylonjs/core';
 import { MapManager } from '../world/MapManager';
 import { PlayerProgress } from '../systems/UpgradeSystem';
 import { DeviceDetector } from '../utils/DeviceDetector';

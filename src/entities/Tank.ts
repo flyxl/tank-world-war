@@ -1,10 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { Mesh } from '@babylonjs/core/Meshes/mesh';
-import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
-import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { PBRMetallicRoughnessMaterial } from '@babylonjs/core/Materials/PBR/pbrMetallicRoughnessMaterial';
-import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { Scene, Mesh, MeshBuilder, TransformNode, Vector3, PBRMetallicRoughnessMaterial, Color3 } from '@babylonjs/core';
 import { MathUtils } from '../utils/MathUtils';
 
 export interface TankConfig {

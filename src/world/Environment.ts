@@ -1,12 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { Mesh } from '@babylonjs/core/Meshes/mesh';
-import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { PBRMetallicRoughnessMaterial } from '@babylonjs/core/Materials/PBR/pbrMetallicRoughnessMaterial';
-import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
-import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
+import { Scene, Mesh, MeshBuilder, Vector3, PBRMetallicRoughnessMaterial, StandardMaterial, Color3, ShadowGenerator, TransformNode } from '@babylonjs/core';
 import { MathUtils } from '../utils/MathUtils';
 import { Terrain } from './Terrain';
 

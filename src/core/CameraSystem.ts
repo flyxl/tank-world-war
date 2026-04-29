@@ -1,7 +1,4 @@
-import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
-import { Scene } from '@babylonjs/core/scene';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
+import { ArcRotateCamera, Scene, Vector3, TransformNode } from '@babylonjs/core';
 import { MathUtils } from '../utils/MathUtils';
 import { DeviceDetector } from '../utils/DeviceDetector';
 import type { InputState } from './InputManager';

@@ -1,9 +1,5 @@
-import { AdvancedDynamicTexture } from '@babylonjs/gui/2D/advancedDynamicTexture';
-import { TextBlock } from '@babylonjs/gui/2D/controls/textBlock';
-import { Rectangle } from '@babylonjs/gui/2D/controls/rectangle';
-import { Control } from '@babylonjs/gui/2D/controls/control';
-import { Ellipse } from '@babylonjs/gui/2D/controls/ellipse';
-import { Scene } from '@babylonjs/core/scene';
+import { AdvancedDynamicTexture, TextBlock, Rectangle, Control, Ellipse } from '@babylonjs/gui';
+import { Scene } from '@babylonjs/core';
 import { PlayerTank } from '../entities/PlayerTank';
 import { Tank } from '../entities/Tank';
 import { Pickup } from '../entities/Pickup';

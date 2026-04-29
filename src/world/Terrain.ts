@@ -1,11 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { Mesh } from '@babylonjs/core/Meshes/mesh';
-import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
-import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
-import { PBRMetallicRoughnessMaterial } from '@babylonjs/core/Materials/PBR/pbrMetallicRoughnessMaterial';
-import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
+import { Scene, Mesh, MeshBuilder, VertexData, PBRMetallicRoughnessMaterial, Color3, Vector3, DynamicTexture } from '@babylonjs/core';
 
 export interface TerrainConfig {
   size: number;

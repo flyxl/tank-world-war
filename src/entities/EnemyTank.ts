@@ -1,5 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Scene, Vector3 } from '@babylonjs/core';
 import { Tank, TankConfig } from './Tank';
 import { MathUtils } from '../utils/MathUtils';
 

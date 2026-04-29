@@ -1,4 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
+import { Scene } from '@babylonjs/core';
 
 export interface BattleResult {
   victory: boolean;

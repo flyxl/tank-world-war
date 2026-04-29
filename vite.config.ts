@@ -5,8 +5,14 @@ export default defineConfig({
     host: true,
     port: 3000,
   },
+  base: './',
   build: {
-    target: 'es2020',
-    chunkSizeWarningLimit: 2000,
+    target: 'es2022',
+    chunkSizeWarningLimit: 8000,
+    rolldownOptions: {
+      output: {
+        codeSplitting: false,
+      },
+    },
   },
 });

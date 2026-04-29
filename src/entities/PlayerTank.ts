@@ -1,7 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import '@babylonjs/core/Culling/ray';
-import { Plane } from '@babylonjs/core/Maths/math.plane';
+import { Scene, Vector3, Plane } from '@babylonjs/core';
 import { Tank, TankConfig } from './Tank';
 import { MathUtils } from '../utils/MathUtils';
 import type { InputState } from '../core/InputManager';

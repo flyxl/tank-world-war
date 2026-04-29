@@ -1,6 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
-import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
+import { Scene, TransformNode, SceneLoader } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 
 export class TankModelLoader {

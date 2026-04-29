@@ -1,5 +1,4 @@
-import { Scene } from '@babylonjs/core/scene';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Scene, Vector3 } from '@babylonjs/core';
 import { Tank, TANK_CONFIGS, TankConfig } from './Tank';
 import { PlayerTank } from './PlayerTank';
 import { EnemyTank } from './EnemyTank';
