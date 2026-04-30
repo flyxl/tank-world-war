@@ -175,6 +175,10 @@ export class PlayerTank extends Tank {
     if (!mat) return;
     mat.backFaceCulling = false;
     if (mat instanceof StandardMaterial) {
+      console.log('[PlayerTank] Material:', mat.name,
+        'diffuseTex:', mat.diffuseTexture?.name ?? 'NONE',
+        'ambientTex:', mat.ambientTexture?.name ?? 'NONE',
+        'diffuseColor:', mat.diffuseColor.toString());
       mat.emissiveColor.set(0.18, 0.18, 0.15);
     }
   }
