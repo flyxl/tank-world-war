@@ -61,20 +61,24 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
+    // 3ds Max Z-up → Babylon Y-up：绕 X 转 -90°
+    const zUpFix = new TransformNode(this.tankId + '_zUpFix', this.scene);
+    zUpFix.parent = this.root;
+    zUpFix.rotation.x = -Math.PI / 2;
+
     this.turret = new TransformNode(this.tankId + '_turretPivot', this.scene);
-    this.turret.parent = this.root;
+    this.turret.parent = zUpFix;
 
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
 
-      // OBJ 导入后 StandardMaterial 在 PBR 场景中几乎全黑；转为 PBR 并启用双面渲染
       this.upgradeMaterialToPBR(mesh);
 
       const nm = mesh.name.toLowerCase();
       if (nm.includes('turret')) {
         mesh.parent = this.turret;
       } else {
-        mesh.parent = this.root;
+        mesh.parent = zUpFix;
       }
     }
 
@@ -158,26 +162,20 @@ export class PlayerTank extends Tank {
   }
 
   /**
-   * OBJ loader 创建 StandardMaterial，在 PBR 光照环境下几乎全黑。
-   * 把漫反射贴图迁移到 PBRMaterial，并启用双面渲染以修复法线方向问题。
+   * OBJ loader 创建 StandardMaterial，在 PBR 光照下几乎全黑且可能法线朝内。
+   * 双面渲染 + 提亮；优先保留原 StandardMaterial（它已绑好贴图），不换类型。
    */
   private upgradeMaterialToPBR(mesh: Mesh): void {
-    const stdMat = mesh.material;
-    if (!stdMat || !(stdMat instanceof StandardMaterial)) return;
+    const mat = mesh.material;
+    if (!mat) return;
 
-    const pbr = new PBRMaterial(stdMat.name + '_pbr', this.scene);
-    pbr.metallic = 0.15;
-    pbr.roughness = 0.75;
-    pbr.backFaceCulling = false;
+    mat.backFaceCulling = false;
 
-    const diffTex = stdMat.diffuseTexture;
-    if (diffTex && diffTex instanceof Texture) {
-      pbr.albedoTexture = diffTex;
-    } else {
-      pbr.albedoColor = stdMat.diffuseColor.clone();
+    if (mat instanceof StandardMaterial) {
+      mat.ambientColor.set(0.5, 0.5, 0.5);
+      mat.emissiveColor.set(0.25, 0.25, 0.2);
+      mat.specularPower = 20;
     }
-
-    mesh.material = pbr;
   }
 
   private placeFirePointFromTurretMesh(): void {
