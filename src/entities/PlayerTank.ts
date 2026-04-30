@@ -58,12 +58,9 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
-    // 合并包围盒：最长边应对齐地面水平（XZ），否则绕轴转 90°；比固定 INVERT_Y/180° 更稳
-    const orient = new TransformNode(this.tankId + '_autoOrient', this.scene);
-    orient.parent = this.root;
-
+    // 此 Panzer III OBJ 顶点已是 Y-up（y=车高,z=车长,x=车宽），无需旋转
     this.turret = new TransformNode(this.tankId + '_turretPivot', this.scene);
-    this.turret.parent = orient;
+    this.turret.parent = this.root;
 
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
@@ -71,41 +68,8 @@ export class PlayerTank extends Tank {
       if (nm.includes('turret')) {
         mesh.parent = this.turret;
       } else {
-        mesh.parent = orient;
+        mesh.parent = this.root;
       }
-    }
-
-    orient.rotation.set(0, 0, 0);
-    this.turret.rotation.set(0, 0, 0);
-    orient.computeWorldMatrix(true);
-    for (const mesh of meshes) {
-      mesh.computeWorldMatrix(true);
-    }
-
-    const hullMesh = meshes.find((m) => m.name.toLowerCase().includes('hull')) as Mesh | undefined;
-    if (hullMesh) {
-      hullMesh.refreshBoundingInfo(false, false);
-      const b = hullMesh.getBoundingInfo().boundingBox;
-      const sx = Math.abs(b.maximum.x - b.minimum.x);
-      const sy = Math.abs(b.maximum.y - b.minimum.y);
-      const sz = Math.abs(b.maximum.z - b.minimum.z);
-      const m = Math.max(sx, sy, sz, 1e-6);
-      const eps = 0.08 * m;
-      const yIsShortest = sy <= sx + eps && sy <= sz + eps;
-      const zIsLongest = sz >= sx - eps && sz >= sy - eps;
-      if (yIsShortest && zIsLongest) {
-        // 常见战车：车高最短、车长沿 Z；此 OBJ 常整体倒扣，绕 X 翻 180° 立正
-        orient.rotation.x = Math.PI;
-      } else if (sy >= sx - eps && sy >= sz - eps) {
-        orient.rotation.x = Math.PI / 2;
-      } else if (sx >= sy - eps && sx >= sz - eps) {
-        orient.rotation.z = Math.PI / 2;
-      }
-    }
-
-    orient.computeWorldMatrix(true);
-    for (const mesh of meshes) {
-      mesh.computeWorldMatrix(true);
     }
 
     this.body =
