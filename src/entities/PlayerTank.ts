@@ -172,14 +172,35 @@ export class PlayerTank extends Tank {
 
   private fixMeshMaterial(mesh: Mesh): void {
     const mat = mesh.material;
-    if (!mat) return;
+    if (!mat) {
+      const newMat = new StandardMaterial(mesh.name + '_mat', this.scene);
+      newMat.diffuseColor.set(0.35, 0.40, 0.28);
+      newMat.backFaceCulling = false;
+      mesh.material = newMat;
+      return;
+    }
 
     mat.backFaceCulling = false;
 
     if (mat instanceof StandardMaterial) {
-      mat.ambientColor.set(0.5, 0.5, 0.5);
-      mat.emissiveColor.set(0.25, 0.25, 0.2);
-      mat.specularPower = 20;
+      // MTL 引用的贴图文件不存在，移除无效引用并设置军事色
+      if (mat.diffuseTexture) mat.diffuseTexture = null;
+      if (mat.ambientTexture) mat.ambientTexture = null;
+
+      const nm = mesh.name.toLowerCase();
+      if (nm.includes('track')) {
+        mat.diffuseColor.set(0.28, 0.24, 0.18);
+        mat.specularColor.set(0.15, 0.15, 0.12);
+      } else if (nm.includes('turret')) {
+        mat.diffuseColor.set(0.38, 0.42, 0.30);
+        mat.specularColor.set(0.2, 0.2, 0.18);
+      } else {
+        mat.diffuseColor.set(0.34, 0.38, 0.26);
+        mat.specularColor.set(0.18, 0.18, 0.15);
+      }
+      mat.ambientColor.set(0.3, 0.3, 0.3);
+      mat.emissiveColor.set(0.05, 0.05, 0.04);
+      mat.specularPower = 32;
     }
   }
 
@@ -190,14 +211,13 @@ export class PlayerTank extends Tank {
       return;
     }
     const b = tm.getBoundingInfo().boundingBox;
-    const sx = tm.scaling.x;
-    const sy = tm.scaling.y;
-    const sz = tm.scaling.z;
-    this.firePoint.position.set(
-      (b.minimum.x + b.maximum.x) * 0.5 * sx + tm.position.x,
-      (b.minimum.y + b.maximum.y) * 0.5 * sy + tm.position.y,
-      b.maximum.z * sz + tm.position.z + 0.12
-    );
+    // OBJ 空间: x=前后(炮管), y=左右, z=高度
+    // turretOrient 变换后: OBJ(x,y,z) → turretPivot(y, z, x)
+    // firePoint 在 turretPivot 本地空间中
+    const fpX = (b.minimum.y + b.maximum.y) * 0.5; // OBJ y 中心 → 横向居中
+    const fpY = (b.minimum.z + b.maximum.z) * 0.5; // OBJ z 中心 → 炮管高度
+    const fpZ = b.maximum.x + 0.15;                // OBJ x 最大值 → 炮口前方
+    this.firePoint.position.set(fpX, fpY, fpZ);
   }
 
   handleInput(input: InputState, dt: number): void {
