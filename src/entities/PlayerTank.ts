@@ -170,30 +170,12 @@ export class PlayerTank extends Tank {
     return Number.isFinite(y) ? y : this.root.position.y;
   }
 
-  private fixMeshMaterial(mesh: Mesh, textureBaseUrl: string): void {
-    let mat = mesh.material as StandardMaterial | null;
-    if (!mat || !(mat instanceof StandardMaterial)) {
-      mat = new StandardMaterial(mesh.name + '_mat', this.scene);
-      mesh.material = mat;
-    }
+  private fixMeshMaterial(mesh: Mesh, _textureBaseUrl: string): void {
+    mesh.flipFaces(true);
 
+    const mat = mesh.material;
+    if (!mat) return;
     mat.backFaceCulling = false;
-    mat.emissiveColor.set(0.12, 0.12, 0.10);
-
-    if (!mat.diffuseTexture) {
-      const nm = mesh.name.toLowerCase();
-      let texFile = '';
-      if (nm.includes('turret')) {
-        texFile = '14077_WWII_Tank_Germany_Panzer_III_turret_diff.jpg';
-      } else if (nm.includes('hull')) {
-        texFile = '14077_WWII_Tank_Germany_Panzer_III_hull_diff.jpg';
-      } else if (nm.includes('track')) {
-        texFile = '14077_WWII_Tank_Germany_Panzer_III_tracks_diff.jpg';
-      }
-      if (texFile) {
-        mat.diffuseTexture = new Texture(textureBaseUrl + texFile, this.scene);
-      }
-    }
   }
 
   private placeFirePointFromTurretMesh(): void {
