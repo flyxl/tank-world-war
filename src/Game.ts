@@ -23,6 +23,7 @@ import { BattleResultUI, BattleResult } from './ui/BattleResultUI';
 import { DeviceDetector } from './utils/DeviceDetector';
 import { Pickup, PickupType } from './entities/Pickup';
 import { MathUtils } from './utils/MathUtils';
+import { getSelectedModelId } from './entities/TankModelRegistry';
 
 export enum GameState {
   MENU,
@@ -276,7 +277,7 @@ export class Game {
     }
 
     // 必须在 BATTLE 且敌军已注册之后再 await，否则加载期间 getAliveCount()===0 会误判胜利
-    await this.player.applyExternalPlayerModel(this.mapManager);
+    await this.player.applyExternalPlayerModel(this.mapManager, getSelectedModelId());
   }
 
   private gameLoop(): void {

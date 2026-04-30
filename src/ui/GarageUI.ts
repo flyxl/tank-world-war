@@ -2,6 +2,7 @@ import { Scene } from '@babylonjs/core';
 import { UpgradeSystem, TankUpgrades } from '../systems/UpgradeSystem';
 import { TANK_CONFIGS } from '../entities/Tank';
 import { ModelViewer } from './ModelViewer';
+import { TANK_MODELS, getSelectedModelId } from '../entities/TankModelRegistry';
 
 export class GarageUI {
   private root: HTMLDivElement;
@@ -69,6 +70,12 @@ export class GarageUI {
         #garageUI .g-up-btn.can { background: #e94560; }
         #garageUI .g-up-btn.can:hover { background: #c0392b; }
         #garageUI .g-up-btn.no { background: rgba(255,255,255,0.1); cursor: not-allowed; color: rgba(255,255,255,0.4); }
+        #garageUI .g-model-info {
+          margin-top: 1.2rem; padding: 8px 20px; border-radius: 8px;
+          background: rgba(46,204,113,0.12); border: 1px solid rgba(46,204,113,0.3);
+          font-size: 0.9rem; color: rgba(255,255,255,0.8);
+        }
+        #garageUI .g-model-name { color: #2ecc71; font-weight: 700; }
         #garageUI .g-btn-row { display: flex; gap: 12px; margin-top: 1.5rem; }
         #garageUI .g-back, #garageUI .g-browse {
           padding: 10px 32px; border-radius: 10px; border: none;
@@ -105,8 +112,12 @@ export class GarageUI {
         </div>`;
       }).join('')}
 
+      <div class="g-model-info">
+        出战模型: <span class="g-model-name">${TANK_MODELS[getSelectedModelId()]?.name ?? '默认'}</span>
+      </div>
+
       <div class="g-btn-row">
-        <button class="g-browse">浏览 3D 模型</button>
+        <button class="g-browse">选择出战坦克</button>
         <button class="g-back">返回主菜单</button>
       </div>
     `;

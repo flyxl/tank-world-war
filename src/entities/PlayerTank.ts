@@ -52,9 +52,16 @@ export class PlayerTank extends Tank {
       return;
     }
 
-    const meshes = result.meshes.filter(
-      (m) => m instanceof Mesh && !m.name.toLowerCase().includes('__root__')
-    ) as Mesh[];
+    const excludeSet = new Set(def.excludeMaterials?.map(n => n.toLowerCase()) ?? []);
+    const meshes = result.meshes.filter((m) => {
+      if (!(m instanceof Mesh)) return false;
+      if (m.name.toLowerCase().includes('__root__')) return false;
+      if (excludeSet.size > 0 && m.material) {
+        const matName = m.material.name.toLowerCase();
+        if (excludeSet.has(matName)) { m.dispose(); return false; }
+      }
+      return true;
+    }) as Mesh[];
     if (meshes.length === 0) {
       console.warn('[PlayerTank] External model produced no meshes.');
       return;

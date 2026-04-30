@@ -15,6 +15,8 @@ export interface TankModelDef {
   emissiveBoost: Vector3;
   /** If true, the model file is an X-forward model needing additional Z rotation. */
   xForward: boolean;
+  /** Material names to exclude (duplicate LOD meshes, etc.). */
+  excludeMaterials?: string[];
 }
 
 export const TANK_MODELS: Record<string, TankModelDef> = {
@@ -33,10 +35,11 @@ export const TANK_MODELS: Record<string, TankModelDef> = {
     name: 'T-90A',
     modelFile: 'models/t-90a(Elements_of_war)/t-90a(Elements_of_war).obj',
     upAxis: 'z-up',
-    yawOffset: Math.PI,
+    yawOffset: 0,
     brightnessMult: 2.0,
     emissiveBoost: new Vector3(0.15, 0.15, 0.12),
     xForward: false,
+    excludeMaterials: ['Material__3919', 'Material__3920'],
   },
 };
 
@@ -46,4 +49,18 @@ export function getModelDef(id: string): TankModelDef | undefined {
 
 export function getDefaultModelId(): string {
   return 'panzer3';
+}
+
+const STORAGE_KEY = 'tank_selected_model';
+
+export function getSelectedModelId(): string {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved && TANK_MODELS[saved]) return saved;
+  return getDefaultModelId();
+}
+
+export function setSelectedModelId(id: string): void {
+  if (TANK_MODELS[id]) {
+    localStorage.setItem(STORAGE_KEY, id);
+  }
 }

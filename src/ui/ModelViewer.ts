@@ -13,7 +13,7 @@ import {
   StandardMaterial,
 } from '@babylonjs/core';
 import '@babylonjs/loaders/OBJ';
-import { TANK_MODELS, type TankModelDef } from '../entities/TankModelRegistry';
+import { TANK_MODELS, type TankModelDef, getSelectedModelId, setSelectedModelId } from '../entities/TankModelRegistry';
 import { TankModelLoader } from '../entities/TankModelLoader';
 
 export class ModelViewer {
@@ -107,6 +107,32 @@ export class ModelViewer {
         position: absolute; top: 20px; left: 30px;
         color: rgba(255,255,255,0.5); font-size: 0.8rem;
       }
+      .mv-select {
+        padding: 12px 32px; border-radius: 10px; border: 2px solid transparent;
+        background: linear-gradient(135deg, #e94560, #c0392b); color: #fff;
+        font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+      }
+      .mv-select:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(233,69,96,0.4); }
+      .mv-select.selected {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+        cursor: default; border-color: #fff;
+      }
+      .mv-select.selected:hover { transform: none; box-shadow: none; }
+      .mv-status {
+        color: rgba(255,255,255,0.6); font-size: 0.85rem; text-align: center;
+        margin-top: 4px;
+      }
+      .mv-loading {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+        display: flex; flex-direction: column; align-items: center; gap: 12px;
+      }
+      .mv-spinner {
+        width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.15);
+        border-top-color: #3498db; border-radius: 50%;
+        animation: mv-spin 0.8s linear infinite;
+      }
+      @keyframes mv-spin { to { transform: rotate(360deg); } }
+      .mv-loading-text { color: rgba(255,255,255,0.7); font-size: 0.9rem; }
     `;
     this.overlay.appendChild(style);
 
@@ -138,15 +164,74 @@ export class ModelViewer {
     nextBtn.textContent = '下一个 ▶';
     nextBtn.addEventListener('click', () => this.navigate(1));
 
+    const selectBtn = document.createElement('button');
+    selectBtn.className = 'mv-select';
+    selectBtn.id = 'mvSelectBtn';
+    selectBtn.addEventListener('click', () => this.selectCurrentModel());
+
+    const statusEl = document.createElement('div');
+    statusEl.className = 'mv-status';
+    statusEl.id = 'mvStatus';
+
     controls.appendChild(prevBtn);
     controls.appendChild(nameEl);
     controls.appendChild(nextBtn);
     this.overlay.appendChild(controls);
+
+    const selectRow = document.createElement('div');
+    selectRow.style.cssText = 'position:absolute;bottom:90px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;';
+    selectRow.appendChild(selectBtn);
+    selectRow.appendChild(statusEl);
+    this.overlay.appendChild(selectRow);
   }
 
   private navigate(delta: number): void {
     this.currentIdx = (this.currentIdx + delta + this.modelIds.length) % this.modelIds.length;
     this.loadCurrentModel();
+    this.updateSelectUI();
+  }
+
+  private selectCurrentModel(): void {
+    const id = this.modelIds[this.currentIdx];
+    if (id === getSelectedModelId()) return;
+    setSelectedModelId(id);
+    this.updateSelectUI();
+  }
+
+  private updateSelectUI(): void {
+    const btn = document.getElementById('mvSelectBtn') as HTMLButtonElement | null;
+    const status = document.getElementById('mvStatus');
+    if (!btn || !status) return;
+
+    const currentId = this.modelIds[this.currentIdx];
+    const isSelected = currentId === getSelectedModelId();
+
+    if (isSelected) {
+      btn.textContent = '✓ 当前出战';
+      btn.className = 'mv-select selected';
+      status.textContent = '此坦克已选为出战坦克';
+    } else {
+      btn.textContent = '选择出战';
+      btn.className = 'mv-select';
+      const selectedDef = TANK_MODELS[getSelectedModelId()];
+      status.textContent = `当前出战: ${selectedDef?.name ?? '未知'}`;
+    }
+  }
+
+  private showLoading(show: boolean): void {
+    let el = document.getElementById('mvLoading');
+    if (show) {
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'mvLoading';
+        el.className = 'mv-loading';
+        el.innerHTML = '<div class="mv-spinner"></div><div class="mv-loading-text">加载模型中...</div>';
+        this.overlay.appendChild(el);
+      }
+      el.style.display = 'flex';
+    } else if (el) {
+      el.style.display = 'none';
+    }
   }
 
   private async loadCurrentModel(): Promise<void> {
@@ -161,15 +246,24 @@ export class ModelViewer {
     const nameEl = document.getElementById('mvModelName');
     if (nameEl) nameEl.textContent = def.name;
 
+    this.showLoading(true);
+
     const base = import.meta.env.BASE_URL;
     const modelUrl = (base.endsWith('/') ? base : base + '/') + def.modelFile;
     const { rootUrl, fileName } = TankModelLoader.splitModelPath(modelUrl);
 
     try {
       const result = await SceneLoader.ImportMeshAsync('', rootUrl, fileName, this.scene);
-      const meshes = result.meshes.filter(
-        (m) => m instanceof Mesh && !m.name.toLowerCase().includes('__root__')
-      ) as Mesh[];
+      const excludeSet = new Set(def.excludeMaterials?.map(n => n.toLowerCase()) ?? []);
+      const meshes = result.meshes.filter((m) => {
+        if (!(m instanceof Mesh)) return false;
+        if (m.name.toLowerCase().includes('__root__')) return false;
+        if (excludeSet.size > 0 && m.material) {
+          const matName = m.material.name.toLowerCase();
+          if (excludeSet.has(matName)) { m.dispose(); return false; }
+        }
+        return true;
+      }) as Mesh[];
 
       if (meshes.length === 0) return;
 
@@ -227,6 +321,9 @@ export class ModelViewer {
     } catch (e) {
       console.warn('[ModelViewer] Failed to load:', def.modelFile, e);
     }
+
+    this.showLoading(false);
+    this.updateSelectUI();
   }
 
   private handleResize = (): void => {
