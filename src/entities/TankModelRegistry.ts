@@ -28,6 +28,16 @@ export const TANK_MODELS: Record<string, TankModelDef> = {
     emissiveBoost: new Vector3(0.25, 0.25, 0.22),
     xForward: true,
   },
+  t90a: {
+    id: 't90a',
+    name: 'T-90A',
+    modelFile: 'models/t-90a(Elements_of_war)/t-90a(Elements_of_war).obj',
+    upAxis: 'z-up',
+    yawOffset: Math.PI,
+    brightnessMult: 2.0,
+    emissiveBoost: new Vector3(0.15, 0.15, 0.12),
+    xForward: false,
+  },
 };
 
 export function getModelDef(id: string): TankModelDef | undefined {

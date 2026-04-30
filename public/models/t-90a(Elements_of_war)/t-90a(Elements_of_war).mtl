@@ -1,0 +1,47 @@
+# MTL for T-90A
+
+newmtl 8430f8ee_dds
+	Ka 1.0000 1.0000 1.0000
+	Kd 1.0000 1.0000 1.0000
+	Ks 0.2000 0.2000 0.2000
+	Ns 40.0000
+	d 1.0000
+	illum 2
+	map_Ka textures_mod/8430f8ee.jpg
+	map_Kd textures_mod/8430f8ee.jpg
+
+newmtl 0588ffb4_dds
+	Ka 1.0000 1.0000 1.0000
+	Kd 1.0000 1.0000 1.0000
+	Ks 0.1000 0.1000 0.1000
+	Ns 30.0000
+	d 1.0000
+	illum 2
+	map_Ka textures_mod/0588ffb4.jpg
+	map_Kd textures_mod/0588ffb4.jpg
+
+newmtl 95d3de2c_dds
+	Ka 1.0000 1.0000 1.0000
+	Kd 1.0000 1.0000 1.0000
+	Ks 0.1000 0.1000 0.1000
+	Ns 30.0000
+	d 1.0000
+	illum 2
+	map_Ka textures_mod/95d3de2c.jpg
+	map_Kd textures_mod/95d3de2c.jpg
+
+newmtl Material__3919
+	Ka 0.3000 0.3000 0.3000
+	Kd 0.2000 0.2000 0.2000
+	Ks 0.4000 0.4000 0.4000
+	Ns 60.0000
+	d 1.0000
+	illum 2
+
+newmtl Material__3920
+	Ka 0.1000 0.1000 0.1000
+	Kd 0.0800 0.0800 0.0800
+	Ks 0.5000 0.5000 0.5000
+	Ns 80.0000
+	d 1.0000
+	illum 2
