@@ -183,23 +183,8 @@ export class PlayerTank extends Tank {
     mat.backFaceCulling = false;
 
     if (mat instanceof StandardMaterial) {
-      // MTL 引用的贴图文件不存在，移除无效引用并设置军事色
-      if (mat.diffuseTexture) mat.diffuseTexture = null;
-      if (mat.ambientTexture) mat.ambientTexture = null;
-
-      const nm = mesh.name.toLowerCase();
-      if (nm.includes('track')) {
-        mat.diffuseColor.set(0.28, 0.24, 0.18);
-        mat.specularColor.set(0.15, 0.15, 0.12);
-      } else if (nm.includes('turret')) {
-        mat.diffuseColor.set(0.38, 0.42, 0.30);
-        mat.specularColor.set(0.2, 0.2, 0.18);
-      } else {
-        mat.diffuseColor.set(0.34, 0.38, 0.26);
-        mat.specularColor.set(0.18, 0.18, 0.15);
-      }
-      mat.ambientColor.set(0.3, 0.3, 0.3);
-      mat.emissiveColor.set(0.05, 0.05, 0.04);
+      mat.ambientColor.set(0.4, 0.4, 0.4);
+      mat.emissiveColor.set(0.08, 0.08, 0.06);
       mat.specularPower = 32;
     }
   }
