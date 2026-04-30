@@ -174,6 +174,9 @@ export class PlayerTank extends Tank {
     const mat = mesh.material;
     if (!mat) return;
     mat.backFaceCulling = false;
+    if (mat instanceof StandardMaterial) {
+      mat.emissiveColor.set(0.18, 0.18, 0.15);
+    }
   }
 
   private placeFirePointFromTurretMesh(): void {

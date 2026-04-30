@@ -107,7 +107,7 @@ export class Game {
 
   private setupBattleLighting(): void {
     this.scene.environmentIntensity = 0.3;
-    this.scene.ambientColor = new Color3(0.25, 0.28, 0.35);
+    this.scene.ambientColor = new Color3(0.45, 0.48, 0.52);
 
     const hemiLight = new HemisphericLight('hemiLight', new Vector3(0.2, 1, 0.1), this.scene);
     hemiLight.intensity = 0.9;
