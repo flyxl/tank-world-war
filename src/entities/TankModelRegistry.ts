@@ -1,0 +1,39 @@
+import { Vector3 } from '@babylonjs/core';
+
+export interface TankModelDef {
+  id: string;
+  name: string;
+  /** Relative path under public/ (appended to BASE_URL at runtime). */
+  modelFile: string;
+  /** Coordinate system origin. 'z-up' = 3ds Max style, 'y-up' = Babylon native. */
+  upAxis: 'y-up' | 'z-up';
+  /** Extra Y rotation (radians) applied after axis correction to face +Z. */
+  yawOffset: number;
+  /** diffuseColor multiplier to compensate dark textures. */
+  brightnessMult: number;
+  /** emissiveColor added for shadow-side visibility. */
+  emissiveBoost: Vector3;
+  /** If true, the model file is an X-forward model needing additional Z rotation. */
+  xForward: boolean;
+}
+
+export const TANK_MODELS: Record<string, TankModelDef> = {
+  panzer3: {
+    id: 'panzer3',
+    name: 'Panzer III',
+    modelFile: 'models/WWII_Tank_Germany_Panzer_III_v1/14077_WWII_Tank_Germany_Panzer_III_v1_L2.obj',
+    upAxis: 'z-up',
+    yawOffset: 0,
+    brightnessMult: 3.0,
+    emissiveBoost: new Vector3(0.25, 0.25, 0.22),
+    xForward: true,
+  },
+};
+
+export function getModelDef(id: string): TankModelDef | undefined {
+  return TANK_MODELS[id];
+}
+
+export function getDefaultModelId(): string {
+  return 'panzer3';
+}

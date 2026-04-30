@@ -7,8 +7,6 @@ import {
   Mesh,
   MeshBuilder,
   StandardMaterial,
-  PBRMaterial,
-  Texture,
 } from '@babylonjs/core';
 import { Tank, TankConfig } from './Tank';
 import { MathUtils } from '../utils/MathUtils';
@@ -16,10 +14,7 @@ import type { InputState } from '../core/InputManager';
 import type { CameraSystem } from '../core/CameraSystem';
 import type { MapManager } from '../world/MapManager';
 import { TankModelLoader } from './TankModelLoader';
-
-/** OBJ under `public/` — served from `import.meta.env.BASE_URL`. */
-export const PLAYER_EXTERNAL_MODEL_REL =
-  'models/WWII_Tank_Germany_Panzer_III_v1/14077_WWII_Tank_Germany_Panzer_III_v1_L2.obj';
+import { type TankModelDef, getModelDef, getDefaultModelId } from './TankModelRegistry';
 
 export class PlayerTank extends Tank {
   private cameraSystem: CameraSystem | null = null;
@@ -34,11 +29,19 @@ export class PlayerTank extends Tank {
   }
 
   /**
-   * Replace procedural mesh with Panzer III OBJ. Falls back silently if load fails.
+   * Replace procedural mesh with external 3D model based on registry config.
+   * @param map - terrain for ground alignment
+   * @param modelId - ID from TankModelRegistry (defaults to getDefaultModelId())
    */
-  async applyExternalPlayerModel(map: MapManager): Promise<void> {
+  async applyExternalPlayerModel(map: MapManager, modelId?: string): Promise<void> {
+    const def = getModelDef(modelId ?? getDefaultModelId());
+    if (!def) {
+      console.warn('[PlayerTank] Unknown model ID:', modelId);
+      return;
+    }
+
     const base = import.meta.env.BASE_URL;
-    const modelUrl = (base.endsWith('/') ? base : base + '/') + PLAYER_EXTERNAL_MODEL_REL;
+    const modelUrl = (base.endsWith('/') ? base : base + '/') + def.modelFile;
     const { rootUrl, fileName } = TankModelLoader.splitModelPath(modelUrl);
 
     let result;
@@ -61,27 +64,28 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
-    // 3ds Max 导出坐标：x=车长, y=车宽(部分), z=车高
-    // Babylon 需要：x=车宽, y=车高, z=车长
-    // 变换：rotation.x=-π/2 (Z-up→Y-up) + rotation.z=-π/2 (车长从X对齐到Z)
+    // 坐标系修正：根据模型定义计算旋转
+    const { rx, rz } = this.computeOrientRotation(def);
+
     const bodyOrient = new TransformNode(this.tankId + '_bodyOrient', this.scene);
     bodyOrient.parent = this.root;
-    bodyOrient.rotation.x = -Math.PI / 2;
-    bodyOrient.rotation.z = -Math.PI / 2;
+    bodyOrient.rotation.x = rx;
+    bodyOrient.rotation.z = rz;
+    bodyOrient.rotation.y = def.yawOffset;
 
-    // 炮塔枢轴直接挂 root，这样 rotation.y 就是绕世界 Y 轴（水平旋转）
+    // 炮塔枢轴直接挂 root，rotation.y 正确绕世界 Y 轴
     this.turret = new TransformNode(this.tankId + '_turretPivot', this.scene);
     this.turret.parent = this.root;
 
-    // 炮塔 mesh 的坐标修正（与车体相同）
     const turretOrient = new TransformNode(this.tankId + '_turretOrient', this.scene);
     turretOrient.parent = this.turret;
-    turretOrient.rotation.x = -Math.PI / 2;
-    turretOrient.rotation.z = -Math.PI / 2;
+    turretOrient.rotation.x = rx;
+    turretOrient.rotation.z = rz;
+    turretOrient.rotation.y = def.yawOffset;
 
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
-      this.fixMeshMaterial(mesh, rootUrl);
+      this.applyModelMaterial(mesh, def);
 
       const nm = mesh.name.toLowerCase();
       if (nm.includes('turret')) {
@@ -170,14 +174,25 @@ export class PlayerTank extends Tank {
     return Number.isFinite(y) ? y : this.root.position.y;
   }
 
-  private fixMeshMaterial(mesh: Mesh, _textureBaseUrl: string): void {
+  private computeOrientRotation(def: TankModelDef): { rx: number; rz: number } {
+    let rx = 0;
+    let rz = 0;
+    if (def.upAxis === 'z-up') {
+      rx = -Math.PI / 2;
+    }
+    if (def.xForward) {
+      rz = -Math.PI / 2;
+    }
+    return { rx, rz };
+  }
+
+  private applyModelMaterial(mesh: Mesh, def: TankModelDef): void {
     const mat = mesh.material as StandardMaterial;
     if (!mat) return;
 
     mat.backFaceCulling = false;
-    // 贴图本身是历史准确的 Dunkelgrau (极暗灰色)，需放大亮度
-    mat.diffuseColor.set(3.0, 3.0, 2.8);
-    mat.emissiveColor.set(0.25, 0.25, 0.22);
+    mat.diffuseColor.set(def.brightnessMult, def.brightnessMult, def.brightnessMult * 0.93);
+    mat.emissiveColor.set(def.emissiveBoost.x, def.emissiveBoost.y, def.emissiveBoost.z);
     mat.specularPower = 24;
   }
 
