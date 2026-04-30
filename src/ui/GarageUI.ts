@@ -1,6 +1,7 @@
 import { Scene } from '@babylonjs/core';
 import { UpgradeSystem, TankUpgrades } from '../systems/UpgradeSystem';
 import { TANK_CONFIGS } from '../entities/Tank';
+import { ModelViewer } from './ModelViewer';
 
 export class GarageUI {
   private root: HTMLDivElement;
@@ -68,12 +69,15 @@ export class GarageUI {
         #garageUI .g-up-btn.can { background: #e94560; }
         #garageUI .g-up-btn.can:hover { background: #c0392b; }
         #garageUI .g-up-btn.no { background: rgba(255,255,255,0.1); cursor: not-allowed; color: rgba(255,255,255,0.4); }
-        #garageUI .g-back {
-          margin-top: 1.5rem; padding: 10px 40px; border-radius: 10px; border: none;
+        #garageUI .g-btn-row { display: flex; gap: 12px; margin-top: 1.5rem; }
+        #garageUI .g-back, #garageUI .g-browse {
+          padding: 10px 32px; border-radius: 10px; border: none;
           background: rgba(255,255,255,0.12); color: #fff; font-size: 1rem;
           cursor: pointer; transition: all 0.15s;
         }
-        #garageUI .g-back:hover { background: rgba(255,255,255,0.2); }
+        #garageUI .g-back:hover, #garageUI .g-browse:hover { background: rgba(255,255,255,0.2); }
+        #garageUI .g-browse { background: rgba(52,152,219,0.3); }
+        #garageUI .g-browse:hover { background: rgba(52,152,219,0.5); }
       </style>
 
       <div class="g-title">车　库</div>
@@ -101,8 +105,16 @@ export class GarageUI {
         </div>`;
       }).join('')}
 
-      <button class="g-back">返回主菜单</button>
+      <div class="g-btn-row">
+        <button class="g-browse">浏览 3D 模型</button>
+        <button class="g-back">返回主菜单</button>
+      </div>
     `;
+
+    this.root.querySelector('.g-browse')!.addEventListener('click', () => {
+      this.hide();
+      new ModelViewer(() => this.show());
+    });
 
     this.root.querySelector('.g-tank-row')!.addEventListener('click', (e) => {
       const t = (e.target as HTMLElement).closest('[data-tank]') as HTMLElement | null;
