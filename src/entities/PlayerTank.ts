@@ -172,21 +172,8 @@ export class PlayerTank extends Tank {
 
   private fixMeshMaterial(mesh: Mesh): void {
     const mat = mesh.material;
-    if (!mat) {
-      const newMat = new StandardMaterial(mesh.name + '_mat', this.scene);
-      newMat.diffuseColor.set(0.35, 0.40, 0.28);
-      newMat.backFaceCulling = false;
-      mesh.material = newMat;
-      return;
-    }
-
+    if (!mat) return;
     mat.backFaceCulling = false;
-
-    if (mat instanceof StandardMaterial) {
-      mat.ambientColor.set(0.4, 0.4, 0.4);
-      mat.emissiveColor.set(0.08, 0.08, 0.06);
-      mat.specularPower = 32;
-    }
   }
 
   private placeFirePointFromTurretMesh(): void {
