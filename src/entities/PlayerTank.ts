@@ -170,32 +170,17 @@ export class PlayerTank extends Tank {
     return Number.isFinite(y) ? y : this.root.position.y;
   }
 
-  private fixMeshMaterial(mesh: Mesh, textureBaseUrl: string): void {
-    const origMat = mesh.material;
-    console.log('[fixMesh]', mesh.name,
-      'matClass:', origMat?.getClassName?.() ?? 'null',
-      'hasDiffTex:', !!(origMat as StandardMaterial)?.diffuseTexture);
+  private fixMeshMaterial(mesh: Mesh, _textureBaseUrl: string): void {
+    const origMat = mesh.material as StandardMaterial;
+    if (!origMat) return;
 
     const mat = new StandardMaterial(mesh.name + '_vis', this.scene);
     mat.backFaceCulling = false;
     mat.disableLighting = true;
+    mat.emissiveColor.set(1, 1, 1);
 
-    const nm = mesh.name.toLowerCase();
-    let texFile = '';
-    if (nm.includes('turret')) {
-      texFile = '14077_WWII_Tank_Germany_Panzer_III_turret_diff.jpg';
-    } else if (nm.includes('hull')) {
-      texFile = '14077_WWII_Tank_Germany_Panzer_III_hull_diff.jpg';
-    } else if (nm.includes('track')) {
-      texFile = '14077_WWII_Tank_Germany_Panzer_III_tracks_diff.jpg';
-    }
-
-    if (texFile) {
-      const tex = new Texture(textureBaseUrl + texFile, this.scene);
-      mat.emissiveTexture = tex;
-      mat.emissiveColor.set(1, 1, 1);
-    } else {
-      mat.emissiveColor.set(0, 1, 0);
+    if (origMat.diffuseTexture) {
+      mat.emissiveTexture = origMat.diffuseTexture;
     }
 
     mesh.material = mat;
