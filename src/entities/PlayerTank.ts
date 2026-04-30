@@ -61,24 +61,33 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
-    // 3ds Max Z-up → Babylon Y-up：绕 X 转 -90°
-    const zUpFix = new TransformNode(this.tankId + '_zUpFix', this.scene);
-    zUpFix.parent = this.root;
-    zUpFix.rotation.x = -Math.PI / 2;
+    // 3ds Max 导出坐标：x=车长, y=车宽(部分), z=车高
+    // Babylon 需要：x=车宽, y=车高, z=车长
+    // 变换：rotation.x=-π/2 (Z-up→Y-up) + rotation.z=-π/2 (车长从X对齐到Z)
+    const bodyOrient = new TransformNode(this.tankId + '_bodyOrient', this.scene);
+    bodyOrient.parent = this.root;
+    bodyOrient.rotation.x = -Math.PI / 2;
+    bodyOrient.rotation.z = -Math.PI / 2;
 
+    // 炮塔枢轴直接挂 root，这样 rotation.y 就是绕世界 Y 轴（水平旋转）
     this.turret = new TransformNode(this.tankId + '_turretPivot', this.scene);
-    this.turret.parent = zUpFix;
+    this.turret.parent = this.root;
+
+    // 炮塔 mesh 的坐标修正（与车体相同）
+    const turretOrient = new TransformNode(this.tankId + '_turretOrient', this.scene);
+    turretOrient.parent = this.turret;
+    turretOrient.rotation.x = -Math.PI / 2;
+    turretOrient.rotation.z = -Math.PI / 2;
 
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
-
-      this.upgradeMaterialToPBR(mesh);
+      this.fixMeshMaterial(mesh);
 
       const nm = mesh.name.toLowerCase();
       if (nm.includes('turret')) {
-        mesh.parent = this.turret;
+        mesh.parent = turretOrient;
       } else {
-        mesh.parent = zUpFix;
+        mesh.parent = bodyOrient;
       }
     }
 
@@ -161,11 +170,7 @@ export class PlayerTank extends Tank {
     return Number.isFinite(y) ? y : this.root.position.y;
   }
 
-  /**
-   * OBJ loader 创建 StandardMaterial，在 PBR 光照下几乎全黑且可能法线朝内。
-   * 双面渲染 + 提亮；优先保留原 StandardMaterial（它已绑好贴图），不换类型。
-   */
-  private upgradeMaterialToPBR(mesh: Mesh): void {
+  private fixMeshMaterial(mesh: Mesh): void {
     const mat = mesh.material;
     if (!mat) return;
 
