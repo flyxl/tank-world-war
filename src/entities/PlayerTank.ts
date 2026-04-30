@@ -175,17 +175,10 @@ export class PlayerTank extends Tank {
     if (!mat) return;
 
     mat.backFaceCulling = false;
-    mat.disableLighting = true;
-    mat.emissiveColor.set(1, 1, 1);
-
-    if (mat.diffuseTexture) {
-      mat.emissiveTexture = mat.diffuseTexture;
-      console.log('[fixMesh] set emissiveTex from diffuse:', mat.diffuseTexture.name,
-        'isReady:', mat.diffuseTexture.isReady());
-    } else {
-      console.log('[fixMesh] NO diffuseTexture on', mesh.name);
-      mat.emissiveColor.set(0, 1, 0);
-    }
+    // 贴图本身是历史准确的 Dunkelgrau (极暗灰色)，需放大亮度
+    mat.diffuseColor.set(3.0, 3.0, 2.8);
+    mat.emissiveColor.set(0.25, 0.25, 0.22);
+    mat.specularPower = 24;
   }
 
   private placeFirePointFromTurretMesh(): void {
