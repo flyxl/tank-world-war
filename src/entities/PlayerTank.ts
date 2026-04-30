@@ -171,11 +171,15 @@ export class PlayerTank extends Tank {
   }
 
   private fixMeshMaterial(mesh: Mesh, _textureBaseUrl: string): void {
-    mesh.flipFaces(true);
-
     const mat = mesh.material;
-    if (!mat) return;
+    if (!(mat instanceof StandardMaterial)) return;
+
     mat.backFaceCulling = false;
+
+    if (mat.diffuseTexture && !mat.emissiveTexture) {
+      mat.emissiveTexture = mat.diffuseTexture.clone();
+      mat.emissiveColor.set(0.6, 0.6, 0.55);
+    }
   }
 
   private placeFirePointFromTurretMesh(): void {
