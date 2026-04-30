@@ -81,7 +81,7 @@ export class PlayerTank extends Tank {
 
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
-      this.fixMeshMaterial(mesh);
+      this.fixMeshMaterial(mesh, rootUrl);
 
       const nm = mesh.name.toLowerCase();
       if (nm.includes('turret')) {
@@ -170,16 +170,29 @@ export class PlayerTank extends Tank {
     return Number.isFinite(y) ? y : this.root.position.y;
   }
 
-  private fixMeshMaterial(mesh: Mesh): void {
-    const mat = mesh.material;
-    if (!mat) return;
+  private fixMeshMaterial(mesh: Mesh, textureBaseUrl: string): void {
+    let mat = mesh.material as StandardMaterial | null;
+    if (!mat || !(mat instanceof StandardMaterial)) {
+      mat = new StandardMaterial(mesh.name + '_mat', this.scene);
+      mesh.material = mat;
+    }
+
     mat.backFaceCulling = false;
-    if (mat instanceof StandardMaterial) {
-      console.log('[PlayerTank] Material:', mat.name,
-        'diffuseTex:', mat.diffuseTexture?.name ?? 'NONE',
-        'ambientTex:', mat.ambientTexture?.name ?? 'NONE',
-        'diffuseColor:', mat.diffuseColor.toString());
-      mat.emissiveColor.set(0.18, 0.18, 0.15);
+    mat.emissiveColor.set(0.12, 0.12, 0.10);
+
+    if (!mat.diffuseTexture) {
+      const nm = mesh.name.toLowerCase();
+      let texFile = '';
+      if (nm.includes('turret')) {
+        texFile = '14077_WWII_Tank_Germany_Panzer_III_turret_diff.jpg';
+      } else if (nm.includes('hull')) {
+        texFile = '14077_WWII_Tank_Germany_Panzer_III_hull_diff.jpg';
+      } else if (nm.includes('track')) {
+        texFile = '14077_WWII_Tank_Germany_Panzer_III_tracks_diff.jpg';
+      }
+      if (texFile) {
+        mat.diffuseTexture = new Texture(textureBaseUrl + texFile, this.scene);
+      }
     }
   }
 
