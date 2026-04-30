@@ -6,6 +6,9 @@ import {
   TransformNode,
   Mesh,
   MeshBuilder,
+  StandardMaterial,
+  PBRMaterial,
+  Texture,
 } from '@babylonjs/core';
 import { Tank, TankConfig } from './Tank';
 import { MathUtils } from '../utils/MathUtils';
@@ -58,12 +61,15 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
-    // 此 Panzer III OBJ 顶点已是 Y-up（y=车高,z=车长,x=车宽），无需旋转
     this.turret = new TransformNode(this.tankId + '_turretPivot', this.scene);
     this.turret.parent = this.root;
 
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
+
+      // OBJ 导入后 StandardMaterial 在 PBR 场景中几乎全黑；转为 PBR 并启用双面渲染
+      this.upgradeMaterialToPBR(mesh);
+
       const nm = mesh.name.toLowerCase();
       if (nm.includes('turret')) {
         mesh.parent = this.turret;
@@ -149,6 +155,29 @@ export class PlayerTank extends Tank {
       if (Number.isFinite(wy)) y = Math.min(y, wy);
     }
     return Number.isFinite(y) ? y : this.root.position.y;
+  }
+
+  /**
+   * OBJ loader 创建 StandardMaterial，在 PBR 光照环境下几乎全黑。
+   * 把漫反射贴图迁移到 PBRMaterial，并启用双面渲染以修复法线方向问题。
+   */
+  private upgradeMaterialToPBR(mesh: Mesh): void {
+    const stdMat = mesh.material;
+    if (!stdMat || !(stdMat instanceof StandardMaterial)) return;
+
+    const pbr = new PBRMaterial(stdMat.name + '_pbr', this.scene);
+    pbr.metallic = 0.15;
+    pbr.roughness = 0.75;
+    pbr.backFaceCulling = false;
+
+    const diffTex = stdMat.diffuseTexture;
+    if (diffTex && diffTex instanceof Texture) {
+      pbr.albedoTexture = diffTex;
+    } else {
+      pbr.albedoColor = stdMat.diffuseColor.clone();
+    }
+
+    mesh.material = pbr;
   }
 
   private placeFirePointFromTurretMesh(): void {
