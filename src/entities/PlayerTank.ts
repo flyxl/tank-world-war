@@ -95,9 +95,10 @@ export class PlayerTank extends Tank {
     const hasTurretMesh = meshes.some(m => m.name.toLowerCase().includes('turret'));
     this._fixedTurret = !hasTurretMesh;
 
+    const processedMats = new Set<number>();
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
-      this.applyModelMaterial(mesh, def);
+      this.applyModelMaterial(mesh, def, processedMats);
 
       const nm = mesh.name.toLowerCase();
       if (hasTurretMesh && nm.includes('turret')) {
@@ -227,12 +228,18 @@ export class PlayerTank extends Tank {
     return { rx, rz };
   }
 
-  private applyModelMaterial(mesh: Mesh, def: TankModelDef): void {
+  private applyModelMaterial(mesh: Mesh, def: TankModelDef, processed: Set<number>): void {
     const mat = mesh.material as StandardMaterial;
     if (!mat) return;
+    if (processed.has(mat.uniqueId)) return;
+    processed.add(mat.uniqueId);
 
     mat.backFaceCulling = false;
-    mat.diffuseColor.set(def.brightnessMult, def.brightnessMult, def.brightnessMult * 0.93);
+    if (mat.diffuseTexture) {
+      mat.diffuseColor.set(def.brightnessMult, def.brightnessMult, def.brightnessMult * 0.93);
+    } else {
+      mat.diffuseColor.scaleInPlace(def.brightnessMult);
+    }
     mat.emissiveColor.set(def.emissiveBoost.x, def.emissiveBoost.y, def.emissiveBoost.z);
     mat.specularPower = 24;
   }

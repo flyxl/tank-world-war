@@ -38,8 +38,8 @@ export const TANK_MODELS: Record<string, TankModelDef> = {
     modelFile: 'models/t34/t34.obj',
     upAxis: 'y-up',
     yawOffset: 0,
-    brightnessMult: 2.5,
-    emissiveBoost: new Vector3(0.18, 0.22, 0.12),
+    brightnessMult: 1.5,
+    emissiveBoost: new Vector3(0.10, 0.14, 0.06),
     xForward: false,
   },
   tiger1: {
@@ -48,8 +48,8 @@ export const TANK_MODELS: Record<string, TankModelDef> = {
     modelFile: 'models/tiger1/tiger1.obj',
     upAxis: 'y-up',
     yawOffset: 0,
-    brightnessMult: 2.5,
-    emissiveBoost: new Vector3(0.22, 0.20, 0.12),
+    brightnessMult: 1.5,
+    emissiveBoost: new Vector3(0.14, 0.12, 0.06),
     xForward: false,
   },
   t90a: {

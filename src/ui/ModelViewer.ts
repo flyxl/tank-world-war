@@ -275,12 +275,18 @@ export class ModelViewer {
       if (def.xForward) orient.rotation.z = -Math.PI / 2;
       orient.rotation.y = def.yawOffset;
 
+      const processedMats = new Set<string>();
       for (const mesh of meshes) {
         mesh.parent = orient;
         const mat = mesh.material as StandardMaterial;
-        if (mat) {
+        if (mat && !processedMats.has(mat.uniqueId.toString())) {
+          processedMats.add(mat.uniqueId.toString());
           mat.backFaceCulling = false;
-          mat.diffuseColor?.set(def.brightnessMult, def.brightnessMult, def.brightnessMult * 0.93);
+          if (mat.diffuseTexture) {
+            mat.diffuseColor?.set(def.brightnessMult, def.brightnessMult, def.brightnessMult * 0.93);
+          } else if (mat.diffuseColor) {
+            mat.diffuseColor.scaleInPlace(def.brightnessMult);
+          }
           mat.emissiveColor?.set(def.emissiveBoost.x, def.emissiveBoost.y, def.emissiveBoost.z);
         }
       }
