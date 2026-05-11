@@ -16,6 +16,64 @@ export interface TankConfig {
 }
 
 export const TANK_CONFIGS: Record<string, TankConfig> = {
+  // --- Player-selectable tanks (based on real-world data) ---
+  // Panzer III Ausf.J: 22.7t, 50mm KwK 39, 300hp, 40km/h, 50mm前装甲
+  panzer3: {
+    name: 'Panzer III',
+    type: 'medium',
+    maxHealth: 120,
+    speed: 7.0,
+    turnSpeed: 2.5,
+    turretSpeed: 2.0,
+    damage: 18,
+    reloadTime: 2.0,
+    armor: 5,
+    bodyColor: new Color3(0.4, 0.38, 0.28),
+    bodyScale: new Vector3(1.8, 0.6, 2.6),
+  },
+  // T-34/76: 26.5t, 76.2mm F-34, 500hp, 55km/h, 45mm@60°倾斜装甲
+  t34: {
+    name: 'T-34',
+    type: 'medium',
+    maxHealth: 140,
+    speed: 8.5,
+    turnSpeed: 2.2,
+    turretSpeed: 2.5,
+    damage: 22,
+    reloadTime: 2.5,
+    armor: 8,
+    bodyColor: new Color3(0.28, 0.35, 0.2),
+    bodyScale: new Vector3(1.9, 0.6, 2.8),
+  },
+  // Tiger I: 57t, 88mm KwK 36 L/56, 700hp, 45km/h, 100mm前装甲
+  tiger1: {
+    name: 'Tiger I',
+    type: 'heavy',
+    maxHealth: 200,
+    speed: 7.5,
+    turnSpeed: 1.2,
+    turretSpeed: 1.5,
+    damage: 35,
+    reloadTime: 3.5,
+    armor: 15,
+    bodyColor: new Color3(0.42, 0.4, 0.32),
+    bodyScale: new Vector3(2.2, 0.7, 3.2),
+  },
+  // T-90A: 46.5t, 125mm 2A46M-2, 1000hp, 60km/h, 800mm+等效装甲(ERA), 自动装弹机
+  t90a: {
+    name: 'T-90A',
+    type: 'heavy',
+    maxHealth: 250,
+    speed: 9.5,
+    turnSpeed: 1.6,
+    turretSpeed: 4.0,
+    damage: 42,
+    reloadTime: 2.0,
+    armor: 22,
+    bodyColor: new Color3(0.28, 0.32, 0.22),
+    bodyScale: new Vector3(2.0, 0.7, 3.0),
+  },
+  // --- Generic enemy types ---
   light: {
     name: '轻型坦克',
     type: 'light',

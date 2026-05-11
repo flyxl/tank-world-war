@@ -23,11 +23,11 @@ import { BattleResultUI, BattleResult } from './ui/BattleResultUI';
 import { DeviceDetector } from './utils/DeviceDetector';
 import { Pickup, PickupType } from './entities/Pickup';
 import { MathUtils } from './utils/MathUtils';
-import { getSelectedModelId } from './entities/TankModelRegistry';
 
 export enum GameState {
   MENU,
   GARAGE,
+  LOADING,
   BATTLE,
   RESULT,
 }
@@ -198,8 +198,46 @@ export class Game {
     }, this.scene);
   }
 
+  private loadingOverlay: HTMLDivElement | null = null;
+
+  private showLoadingUI(): void {
+    this.loadingOverlay = document.createElement('div');
+    this.loadingOverlay.id = 'loadingOverlay';
+    this.loadingOverlay.innerHTML = `
+      <style>
+        #loadingOverlay {
+          position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(5,10,20,0.95); display: flex; flex-direction: column;
+          align-items: center; justify-content: center; z-index: 200;
+          font-family: Arial, sans-serif; color: #fff;
+        }
+        #loadingOverlay .ld-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 1.2rem; color: #3498db; }
+        #loadingOverlay .ld-bar-wrap {
+          width: 240px; height: 6px; border-radius: 3px;
+          background: rgba(255,255,255,0.1); overflow: hidden;
+        }
+        #loadingOverlay .ld-bar {
+          height: 100%; width: 30%; border-radius: 3px;
+          background: linear-gradient(90deg, #3498db, #2ecc71);
+          animation: ldPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes ldPulse { 0%{width:20%;margin-left:0} 50%{width:50%;margin-left:25%} 100%{width:20%;margin-left:80%} }
+        #loadingOverlay .ld-text { margin-top: 1rem; font-size: 0.9rem; color: rgba(255,255,255,0.6); }
+      </style>
+      <div class="ld-title">战斗准备中</div>
+      <div class="ld-bar-wrap"><div class="ld-bar"></div></div>
+      <div class="ld-text">加载坦克模型...</div>
+    `;
+    document.body.appendChild(this.loadingOverlay);
+  }
+
+  private hideLoadingUI(): void {
+    this.loadingOverlay?.remove();
+    this.loadingOverlay = null;
+  }
+
   private async startBattle(mapId: string, tankType: string): Promise<void> {
-    this.state = GameState.BATTLE;
+    this.state = GameState.LOADING;
     this.kills = 0;
 
     this.mainMenu?.dispose();
@@ -209,6 +247,7 @@ export class Game {
     this.battleResult?.dispose();
     this.battleResult = null;
 
+    this.showLoadingUI();
     this.audio.init();
 
     const oldMenuCam = this.scene.getCameraByName('menuCamera');
@@ -234,6 +273,7 @@ export class Game {
     const spawnPos = mapConfig.spawnPoints[0].clone() || new Vector3(0, 0, -60);
     spawnPos.y = this.mapManager.getHeightAt(spawnPos.x, spawnPos.z);
     this.player = this.tankFactory.createPlayerTank(tankType, spawnPos);
+    this.player.root.setEnabled(false);
 
     const modStats = this.upgradeSystem.getModifiedStats(tankType, {
       armor: this.player.config.armor,
@@ -276,8 +316,11 @@ export class Game {
       this.spawnPickup();
     }
 
-    // 必须在 BATTLE 且敌军已注册之后再 await，否则加载期间 getAliveCount()===0 会误判胜利
-    await this.player.applyExternalPlayerModel(this.mapManager, getSelectedModelId());
+    await this.player.applyExternalPlayerModel(this.mapManager, tankType);
+    this.player.root.setEnabled(true);
+
+    this.hideLoadingUI();
+    this.state = GameState.BATTLE;
   }
 
   private gameLoop(): void {

@@ -8,7 +8,7 @@ export class GarageUI {
   private root: HTMLDivElement;
   private upgradeSystem: UpgradeSystem;
   private onBack: () => void;
-  private selectedTank = 'medium';
+  private selectedTank = 'panzer3';
 
   constructor(upgradeSystem: UpgradeSystem, onBack: () => void, _scene?: Scene) {
     this.upgradeSystem = upgradeSystem;
@@ -91,7 +91,9 @@ export class GarageUI {
       <div class="g-coins">金币: ${this.upgradeSystem.progress.coins}</div>
 
       <div class="g-tank-row">
-        ${Object.entries(TANK_CONFIGS).map(([id, c]) => {
+        ${['panzer3', 't34', 'tiger1', 't90a'].map(id => {
+          const c = TANK_CONFIGS[id];
+          if (!c) return '';
           const ok = unlocked.includes(id);
           const cls = !ok ? 'locked' : (id === this.selectedTank ? 'active' : '');
           return `<div class="g-tank-btn ${cls}" data-tank="${id}" ${!ok ? 'data-locked="1"' : ''}>${ok ? c.name : '🔒'}</div>`;

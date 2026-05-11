@@ -32,7 +32,7 @@ export class UpgradeSystem {
       level: 1,
       experience: 0,
       coins: 100,
-      unlockedTanks: ['medium'],
+      unlockedTanks: ['panzer3'],
       upgrades: {},
       totalKills: 0,
       totalBattles: 0,
@@ -69,14 +69,14 @@ export class UpgradeSystem {
       levelUp = true;
     }
 
-    if (this.progress.level >= 3 && !this.progress.unlockedTanks.includes('light')) {
-      this.progress.unlockedTanks.push('light');
+    if (this.progress.level >= 3 && !this.progress.unlockedTanks.includes('t34')) {
+      this.progress.unlockedTanks.push('t34');
     }
-    if (this.progress.level >= 5 && !this.progress.unlockedTanks.includes('heavy')) {
-      this.progress.unlockedTanks.push('heavy');
+    if (this.progress.level >= 5 && !this.progress.unlockedTanks.includes('tiger1')) {
+      this.progress.unlockedTanks.push('tiger1');
     }
-    if (this.progress.level >= 8 && !this.progress.unlockedTanks.includes('destroyer')) {
-      this.progress.unlockedTanks.push('destroyer');
+    if (this.progress.level >= 8 && !this.progress.unlockedTanks.includes('t90a')) {
+      this.progress.unlockedTanks.push('t90a');
     }
 
     this.save();

@@ -13,7 +13,7 @@ import {
   StandardMaterial,
 } from '@babylonjs/core';
 import '@babylonjs/loaders/OBJ';
-import { TANK_MODELS, type TankModelDef, getSelectedModelId, setSelectedModelId } from '../entities/TankModelRegistry';
+import { TANK_MODELS, getSelectedModelId, setSelectedModelId } from '../entities/TankModelRegistry';
 import { TankModelLoader } from '../entities/TankModelLoader';
 
 export class ModelViewer {
@@ -286,18 +286,28 @@ export class ModelViewer {
       }
 
       this.modelRoot.computeWorldMatrix(true);
+      let minX = Infinity, maxX = -Infinity;
       let minY = Infinity, maxY = -Infinity;
-      let maxSpan = 0;
+      let minZ = Infinity, maxZ = -Infinity;
       for (const m of meshes) {
+        m.refreshBoundingInfo(true);
         m.computeWorldMatrix(true);
         const bi = m.getBoundingInfo();
         if (!bi) continue;
         const mn = bi.boundingBox.minimumWorld;
         const mx = bi.boundingBox.maximumWorld;
-        minY = Math.min(minY, mn.y);
-        maxY = Math.max(maxY, mx.y);
-        maxSpan = Math.max(maxSpan, mx.x - mn.x, mx.z - mn.z);
+        minX = Math.min(minX, mn.x); maxX = Math.max(maxX, mx.x);
+        minY = Math.min(minY, mn.y); maxY = Math.max(maxY, mx.y);
+        minZ = Math.min(minZ, mn.z); maxZ = Math.max(maxZ, mx.z);
       }
+
+      const spanX = maxX - minX;
+      const spanZ = maxZ - minZ;
+      const maxSpan = Math.max(spanX, spanZ);
+
+      // Center model horizontally at origin
+      orient.position.x -= (minX + maxX) / 2;
+      orient.position.z -= (minZ + maxZ) / 2;
 
       if (Number.isFinite(maxSpan) && maxSpan > 0.1) {
         const targetSize = 5;
@@ -307,16 +317,19 @@ export class ModelViewer {
 
       this.modelRoot.computeWorldMatrix(true);
       for (const m of meshes) m.computeWorldMatrix(true);
-      let newMinY = Infinity;
+      let newMinY = Infinity, newMaxY = -Infinity;
       for (const m of meshes) {
         const bi = m.getBoundingInfo();
-        if (bi) newMinY = Math.min(newMinY, bi.boundingBox.minimumWorld.y);
+        if (!bi) continue;
+        newMinY = Math.min(newMinY, bi.boundingBox.minimumWorld.y);
+        newMaxY = Math.max(newMaxY, bi.boundingBox.minimumWorld.y);
       }
       if (Number.isFinite(newMinY)) {
         this.modelRoot.position.y = -newMinY;
       }
 
-      this.camera.setTarget(new Vector3(0, (maxY - minY) * 0.3 * (this.modelRoot.scaling.x), 0));
+      const height = (maxY - minY) * this.modelRoot.scaling.x;
+      this.camera.setTarget(new Vector3(0, height * 0.35, 0));
 
     } catch (e) {
       console.warn('[ModelViewer] Failed to load:', def.modelFile, e);

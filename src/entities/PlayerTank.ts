@@ -18,6 +18,8 @@ import { type TankModelDef, getModelDef, getDefaultModelId } from './TankModelRe
 
 export class PlayerTank extends Tank {
   private cameraSystem: CameraSystem | null = null;
+  /** True when the model has no separable turret mesh (fires in body-forward direction). */
+  _fixedTurret = false;
 
   constructor(scene: Scene, config: TankConfig, position: Vector3) {
     super(scene, config, position);
@@ -71,7 +73,7 @@ export class PlayerTank extends Tank {
       child.dispose(false, true);
     }
 
-    // 坐标系修正：根据模型定义计算旋转
+    // 坐标系修正：组合 Euler 旋转 (Babylon YXZ order: Ry * Rx * Rz)
     const { rx, rz } = this.computeOrientRotation(def);
 
     const bodyOrient = new TransformNode(this.tankId + '_bodyOrient', this.scene);
@@ -90,12 +92,15 @@ export class PlayerTank extends Tank {
     turretOrient.rotation.z = rz;
     turretOrient.rotation.y = def.yawOffset;
 
+    const hasTurretMesh = meshes.some(m => m.name.toLowerCase().includes('turret'));
+    this._fixedTurret = !hasTurretMesh;
+
     for (const mesh of meshes) {
       mesh.refreshBoundingInfo(false, false);
       this.applyModelMaterial(mesh, def);
 
       const nm = mesh.name.toLowerCase();
-      if (nm.includes('turret')) {
+      if (hasTurretMesh && nm.includes('turret')) {
         mesh.parent = turretOrient;
       } else {
         mesh.parent = bodyOrient;
@@ -108,9 +113,38 @@ export class PlayerTank extends Tank {
     this.turretMesh =
       (meshes.find((m) => m.name.toLowerCase().includes('turret')) as Mesh | undefined) ?? meshes[0];
 
+    this.root.computeWorldMatrix(true);
+    for (const mesh of meshes) {
+      mesh.refreshBoundingInfo(true);
+      mesh.computeWorldMatrix(true);
+    }
+
+    // Center model at origin (some models like T-90A have OBJ Y starting at 0)
+    let cMinX = Infinity, cMaxX = -Infinity, cMinZ = Infinity, cMaxZ = -Infinity;
+    for (const m of meshes) {
+      const bi = m.getBoundingInfo();
+      if (!bi) continue;
+      const mn = bi.boundingBox.minimumWorld;
+      const mx = bi.boundingBox.maximumWorld;
+      cMinX = Math.min(cMinX, mn.x); cMaxX = Math.max(cMaxX, mx.x);
+      cMinZ = Math.min(cMinZ, mn.z); cMaxZ = Math.max(cMaxZ, mx.z);
+    }
+    if (Number.isFinite(cMinX) && Number.isFinite(cMaxX)) {
+      const offsetX = (cMinX + cMaxX) / 2 - this.root.position.x;
+      const offsetZ = (cMinZ + cMaxZ) / 2 - this.root.position.z;
+      bodyOrient.position.x -= offsetX;
+      bodyOrient.position.z -= offsetZ;
+      turretOrient.position.x -= offsetX;
+      turretOrient.position.z -= offsetZ;
+      for (const m of meshes) m.computeWorldMatrix(true);
+    }
+
+    // Fire point must be computed AFTER centering so it matches the visual barrel tip
     this.firePoint = new TransformNode(this.tankId + '_firePoint', this.scene);
     this.firePoint.parent = this.turret;
-    this.placeFirePointFromTurretMesh();
+    this.placeFirePointFromTurretMesh(def);
+    this.firePoint.position.x += turretOrient.position.x;
+    this.firePoint.position.z += turretOrient.position.z;
 
     this.barrel = MeshBuilder.CreateBox(this.tankId + '_barrelStub', { size: 0.02 }, this.scene);
     this.barrel.parent = this.turret;
@@ -118,20 +152,20 @@ export class PlayerTank extends Tank {
     this.barrel.isVisible = false;
     this.barrel.isPickable = false;
 
-    this.root.computeWorldMatrix(true);
-    for (const mesh of meshes) {
-      mesh.computeWorldMatrix(true);
-    }
-
     const ref = Math.max(this.config.bodyScale.x, this.config.bodyScale.z) * 0.92;
     const modelLen = this.estimateTankFootprintXZ(meshes);
     if (Number.isFinite(modelLen) && Number.isFinite(ref) && modelLen > 0.05 && modelLen < 400 && ref > 1e-3) {
       let s = ref / modelLen;
       s = Math.min(6, Math.max(0.08, s));
+      s *= def.scaleMult ?? 1.0;
       this.root.scaling.scaleInPlace(s);
     }
 
     this.root.computeWorldMatrix(true);
+
+    // Update bodyScale to match actual model size so collision aligns with visual
+    this.updateBodyScaleFromModel(meshes);
+
     const bottomY = this.getWorldBottomYUnderRoot();
     const terrainY = map.getHeightAt(this.root.position.x, this.root.position.z);
     if (Number.isFinite(bottomY) && Number.isFinite(terrainY)) {
@@ -203,20 +237,30 @@ export class PlayerTank extends Tank {
     mat.specularPower = 24;
   }
 
-  private placeFirePointFromTurretMesh(): void {
+  private placeFirePointFromTurretMesh(def: TankModelDef): void {
     const tm = this.turretMesh;
     if (!tm?.getBoundingInfo()) {
       this.firePoint.position.set(0, 0.55, this.config.bodyScale.z * 0.45);
       return;
     }
     const b = tm.getBoundingInfo().boundingBox;
-    // OBJ 空间: x=前后(炮管), y=左右, z=高度
-    // turretOrient 变换后: OBJ(x,y,z) → turretPivot(y, z, x)
-    // firePoint 在 turretPivot 本地空间中
-    const fpX = (b.minimum.y + b.maximum.y) * 0.5; // OBJ y 中心 → 横向居中
-    const fpY = (b.minimum.z + b.maximum.z) * 0.5; // OBJ z 中心 → 炮管高度
-    const fpZ = b.maximum.x + 0.15;                // OBJ x 最大值 → 炮口前方
-    this.firePoint.position.set(fpX, fpY, fpZ);
+
+    if (def.xForward) {
+      // Panzer III style: OBJ X=forward, Y=lateral, Z=up
+      // After orient (rx=-π/2, rz=-π/2): OBJ(x,y,z) → turretLocal(y, z, x)
+      const fpX = (b.minimum.y + b.maximum.y) * 0.5;
+      const fpY = (b.minimum.z + b.maximum.z) * 0.5;
+      const fpZ = b.maximum.x + 0.15;
+      this.firePoint.position.set(fpX, fpY, fpZ);
+    } else {
+      // T-90A style: OBJ -Y=forward (barrel), X=lateral, Z=up
+      // After orient Rx(-π/2) only: OBJ(x,y,z) → turretLocal(x, z, -y)
+      // Forward (+Z in turret) = OBJ -Y direction; barrel tip at OBJ Y_min
+      const fpX = (b.minimum.x + b.maximum.x) * 0.5;
+      const fpY = (b.minimum.z + b.maximum.z) * 0.5;
+      const fpZ = -b.minimum.y + 0.15;
+      this.firePoint.position.set(fpX, fpY, fpZ);
+    }
   }
 
   handleInput(input: InputState, dt: number): void {
@@ -246,7 +290,9 @@ export class PlayerTank extends Tank {
 
     this.root.position.addInPlace(forward.scale(this.velocity * dt));
 
-    if (input.isMobile) {
+    if (this._fixedTurret) {
+      this.turret.rotation.y = 0;
+    } else if (input.isMobile) {
       this.aimTurretWithJoystick(input, dt);
     } else {
       this.aimTurretAtMouse(input, dt);
@@ -267,6 +313,15 @@ export class PlayerTank extends Tank {
       this.turret.rotation.y = targetAngle;
     } else {
       this.turret.rotation.y += diff * lerpFactor;
+    }
+
+    // Auto-elevation based on fire height to hit ground-level targets
+    const firePos = this.firePoint.getAbsolutePosition();
+    const fireHeight = firePos.y - this.root.position.y;
+    if (fireHeight > 0.3) {
+      const targetPitch = MathUtils.clamp(-fireHeight / 25, -0.25, 0);
+      const pitchDiff = targetPitch - this.turret.rotation.x;
+      this.turret.rotation.x += pitchDiff * lerpFactor;
     }
   }
 
@@ -307,6 +362,41 @@ export class PlayerTank extends Tank {
       this.turret.rotation.y = targetLocal;
     } else {
       this.turret.rotation.y += diff * lerpFactor;
+    }
+
+    // Elevation: aim barrel down toward ground hit point
+    const firePos = this.firePoint.getAbsolutePosition();
+    const toTarget = hitPoint.subtract(firePos);
+    const horizontalDist = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+    if (horizontalDist > 0.5) {
+      const targetPitch = Math.atan2(-toTarget.y, horizontalDist);
+      const clampedPitch = MathUtils.clamp(targetPitch, -0.25, 0.12);
+      const pitchDiff = clampedPitch - this.turret.rotation.x;
+      this.turret.rotation.x += pitchDiff * lerpFactor;
+    }
+  }
+
+  private updateBodyScaleFromModel(meshes: Mesh[]): void {
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (const m of meshes) {
+      m.computeWorldMatrix(true);
+      const bi = m.getBoundingInfo();
+      if (!bi) continue;
+      const mn = bi.boundingBox.minimumWorld;
+      const mx = bi.boundingBox.maximumWorld;
+      if (![mn.x, mn.z, mx.x, mx.z, mn.y, mx.y].every(Number.isFinite)) continue;
+      minX = Math.min(minX, mn.x); maxX = Math.max(maxX, mx.x);
+      minY = Math.min(minY, mn.y); maxY = Math.max(maxY, mx.y);
+      minZ = Math.min(minZ, mn.z); maxZ = Math.max(maxZ, mx.z);
+    }
+    if (!Number.isFinite(minX)) return;
+    const width = maxX - minX;
+    const height = maxY - minY;
+    const depth = maxZ - minZ;
+    if (width > 0.1 && height > 0.1 && depth > 0.1) {
+      this.config.bodyScale.set(width, height, depth);
     }
   }
 }

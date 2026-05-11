@@ -216,8 +216,11 @@ export class CombatSystem {
     const center = tank.root.position.clone();
     center.y += (s.y + 0.8) * 0.5;
 
-    const hitRadius = Math.max(s.x, s.z) * 0.6 + 0.5;
+    const halfX = s.x * 0.55 + 0.3;
+    const halfZ = s.z * 0.55 + 0.3;
     const hitHeight = s.y + 1.5;
+    const cosR = Math.cos(-tank.root.rotation.y);
+    const sinR = Math.sin(-tank.root.rotation.y);
 
     const dist = Vector3.Distance(p0, p1);
     const steps = Math.max(3, Math.ceil(dist / 0.5));
@@ -230,11 +233,12 @@ export class CombatSystem {
 
       const dx = px - center.x;
       const dz = pz - center.z;
-      const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+      const localX = dx * cosR - dz * sinR;
+      const localZ = dx * sinR + dz * cosR;
 
       const dy = py - center.y;
 
-      if (horizontalDist <= hitRadius && Math.abs(dy) <= hitHeight * 0.5) {
+      if (Math.abs(localX) <= halfX && Math.abs(localZ) <= halfZ && Math.abs(dy) <= hitHeight * 0.5) {
         return true;
       }
     }

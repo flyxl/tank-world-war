@@ -17,29 +17,52 @@ export interface TankModelDef {
   xForward: boolean;
   /** Material names to exclude (duplicate LOD meshes, etc.). */
   excludeMaterials?: string[];
+  /** Extra scale multiplier applied after auto-fit (default 1.0). */
+  scaleMult?: number;
 }
 
 export const TANK_MODELS: Record<string, TankModelDef> = {
   panzer3: {
     id: 'panzer3',
     name: 'Panzer III',
-    modelFile: 'models/WWII_Tank_Germany_Panzer_III_v1/14077_WWII_Tank_Germany_Panzer_III_v1_L2.obj',
+    modelFile: 'models/panzer3/panzer3.obj',
     upAxis: 'z-up',
     yawOffset: 0,
     brightnessMult: 3.0,
     emissiveBoost: new Vector3(0.25, 0.25, 0.22),
     xForward: true,
   },
+  t34: {
+    id: 't34',
+    name: 'T-34',
+    modelFile: 'models/t34/t34.obj',
+    upAxis: 'y-up',
+    yawOffset: 0,
+    brightnessMult: 2.5,
+    emissiveBoost: new Vector3(0.18, 0.22, 0.12),
+    xForward: false,
+  },
+  tiger1: {
+    id: 'tiger1',
+    name: 'Tiger I',
+    modelFile: 'models/tiger1/tiger1.obj',
+    upAxis: 'y-up',
+    yawOffset: 0,
+    brightnessMult: 2.5,
+    emissiveBoost: new Vector3(0.22, 0.20, 0.12),
+    xForward: false,
+  },
   t90a: {
     id: 't90a',
     name: 'T-90A',
-    modelFile: 'models/t-90a(Elements_of_war)/t-90a(Elements_of_war).obj',
+    modelFile: 'models/t90a/t90a.obj',
     upAxis: 'z-up',
     yawOffset: 0,
     brightnessMult: 2.0,
     emissiveBoost: new Vector3(0.15, 0.15, 0.12),
     xForward: false,
     excludeMaterials: ['Material__3919', 'Material__3920'],
+    scaleMult: 2.5,
   },
 };
 

@@ -169,6 +169,16 @@ export class EnemyTank extends Tank {
     const normalizedTarget = MathUtils.normalizeAngle(targetAngle);
     const diff = MathUtils.normalizeAngle(normalizedTarget - this.turret.rotation.y);
     this.turret.rotation.y += MathUtils.clamp(diff, -this.config.turretSpeed * dt, this.config.turretSpeed * dt);
+
+    // Elevation toward target
+    const firePos = this.firePoint.getAbsolutePosition();
+    const toTarget = this.target.root.position.subtract(firePos);
+    const hDist = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+    if (hDist > 0.5) {
+      const targetPitch = MathUtils.clamp(Math.atan2(-toTarget.y, hDist), -0.25, 0.12);
+      const pitchDiff = targetPitch - this.turret.rotation.x;
+      this.turret.rotation.x += MathUtils.clamp(pitchDiff, -this.config.turretSpeed * dt, this.config.turretSpeed * dt);
+    }
   }
 
   private maintainDistance(dt: number, idealDist: number): void {

@@ -12,7 +12,7 @@ export interface MenuCallbacks {
 export class MainMenu {
   private root: HTMLDivElement;
   private selectedMap = 'forest';
-  private selectedTank = 'medium';
+  private selectedTank = 'panzer3';
   private callbacks: MenuCallbacks;
   private progress: PlayerProgress;
   private currentPage: 'main' | 'battle-setup' = 'main';
@@ -185,10 +185,10 @@ export class MainMenu {
   private buildBattleSetupHTML(): string {
     const maps = MapManager.getMapList();
     const tankTypes = [
-      { id: 'light', name: '轻型', unlockLv: 3 },
-      { id: 'medium', name: '中型', unlockLv: 1 },
-      { id: 'heavy', name: '重型', unlockLv: 5 },
-      { id: 'destroyer', name: '歼击', unlockLv: 8 },
+      { id: 'panzer3', name: 'Panzer III', unlockLv: 1 },
+      { id: 't34', name: 'T-34', unlockLv: 3 },
+      { id: 'tiger1', name: 'Tiger I', unlockLv: 5 },
+      { id: 't90a', name: 'T-90A', unlockLv: 8 },
     ];
 
     return `
