@@ -11,6 +11,8 @@ export interface InputState {
   mouseScreenY: number;
   moveAxis: Vector2;
   aimAxis: Vector2;
+  /** Mobile elevation slider: -1 (max depression) to 1 (max elevation), 0 = level */
+  elevationInput: number;
   zoomIn: boolean;
   zoomOut: boolean;
   isMobile: boolean;
@@ -36,6 +38,7 @@ export class InputManager {
   private mobileFiring = false;
   private moveJoystickData = { x: 0, y: 0 };
   private aimJoystickData = { x: 0, y: 0 };
+  private elevationValue = 0;
   private wheelDelta = 0;
   private canvas: HTMLCanvasElement;
   private mouseX = 0;
@@ -44,6 +47,7 @@ export class InputManager {
   private moveStick: VirtualJoystick | null = null;
   private aimStick: VirtualJoystick | null = null;
   private fireBtn: HTMLElement | null = null;
+  private elevSlider: { container: HTMLElement; thumb: HTMLElement; track: HTMLElement; touchId: number; active: boolean } | null = null;
 
   private boundTouchStart: ((e: TouchEvent) => void) | null = null;
   private boundTouchMove: ((e: TouchEvent) => void) | null = null;
@@ -149,6 +153,8 @@ export class InputManager {
     this.fireBtn.textContent = '开火';
     document.body.appendChild(this.fireBtn);
 
+    this.elevSlider = this.createElevationSlider();
+
     this.boundTouchStart = this.onTouchStart.bind(this);
     this.boundTouchMove = this.onTouchMove.bind(this);
     this.boundTouchEnd = this.onTouchEnd.bind(this);
@@ -158,6 +164,84 @@ export class InputManager {
     document.addEventListener('touchend', this.boundTouchEnd, { passive: false, capture: true });
     document.addEventListener('touchcancel', this.boundTouchEnd, { passive: false, capture: true });
 
+  }
+
+  private createElevationSlider(): typeof this.elevSlider {
+    const trackH = 120;
+    const thumbH = 24;
+
+    const container = document.createElement('div');
+    Object.assign(container.style, {
+      position: 'fixed', right: '115px', bottom: '50px',
+      width: '30px', height: `${trackH}px`,
+      zIndex: '50', touchAction: 'none', pointerEvents: 'none',
+    });
+
+    const label = document.createElement('div');
+    Object.assign(label.style, {
+      position: 'absolute', top: '-18px', left: '0', width: '100%',
+      textAlign: 'center', color: 'rgba(255,255,255,0.6)',
+      fontSize: '10px', fontFamily: 'sans-serif',
+    });
+    label.textContent = '仰角';
+    container.appendChild(label);
+
+    const track = document.createElement('div');
+    Object.assign(track.style, {
+      position: 'absolute', top: '0', left: '50%', transform: 'translateX(-50%)',
+      width: '6px', height: '100%', borderRadius: '3px',
+      background: 'rgba(255,255,255,0.15)',
+      border: '1px solid rgba(255,255,255,0.25)',
+    });
+    container.appendChild(track);
+
+    const centerMark = document.createElement('div');
+    Object.assign(centerMark.style, {
+      position: 'absolute', top: `${trackH / 2 - 1}px`, left: '2px',
+      width: '26px', height: '2px',
+      background: 'rgba(255,255,255,0.3)',
+    });
+    container.appendChild(centerMark);
+
+    const thumb = document.createElement('div');
+    Object.assign(thumb.style, {
+      position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+      top: `${trackH / 2 - thumbH / 2}px`,
+      width: '22px', height: `${thumbH}px`, borderRadius: '4px',
+      background: 'rgba(255,200,100,0.5)',
+      border: '2px solid rgba(255,255,255,0.5)',
+    });
+    container.appendChild(thumb);
+    document.body.appendChild(container);
+
+    return { container, thumb, track, touchId: -1, active: false };
+  }
+
+  private isNearElevSlider(tx: number, ty: number): boolean {
+    if (!this.elevSlider) return false;
+    const rect = this.elevSlider.container.getBoundingClientRect();
+    const margin = 25;
+    return tx >= rect.left - margin && tx <= rect.right + margin &&
+           ty >= rect.top - margin && ty <= rect.bottom + margin;
+  }
+
+  private updateElevSlider(ty: number): void {
+    if (!this.elevSlider) return;
+    const rect = this.elevSlider.container.getBoundingClientRect();
+    const trackH = rect.height;
+    const thumbH = 24;
+    const relY = ty - rect.top;
+    const clamped = Math.max(0, Math.min(trackH, relY));
+    this.elevationValue = 1 - (clamped / trackH) * 2;
+    this.elevSlider.thumb.style.top = `${clamped - thumbH / 2}px`;
+  }
+
+  private resetElevSlider(): void {
+    if (!this.elevSlider) return;
+    const trackH = parseInt(this.elevSlider.container.style.height);
+    const thumbH = 24;
+    this.elevSlider.thumb.style.top = `${trackH / 2 - thumbH / 2}px`;
+    this.elevationValue = 0;
   }
 
   private getStickCenter(stick: VirtualJoystick): { x: number; y: number } {
@@ -211,6 +295,14 @@ export class InputManager {
         e.preventDefault();
         continue;
       }
+
+      if (this.elevSlider && !this.elevSlider.active && this.isNearElevSlider(tx, ty)) {
+        this.elevSlider.active = true;
+        this.elevSlider.touchId = t.identifier;
+        this.updateElevSlider(ty);
+        e.preventDefault();
+        continue;
+      }
     }
   }
 
@@ -229,6 +321,11 @@ export class InputManager {
         this.updateStick(this.aimStick, t.clientX, t.clientY);
         this.aimJoystickData.x = this.aimStick.dx;
         this.aimJoystickData.y = this.aimStick.dy;
+        e.preventDefault();
+      }
+
+      if (this.elevSlider?.active && t.identifier === this.elevSlider.touchId) {
+        this.updateElevSlider(t.clientY);
         e.preventDefault();
       }
     }
@@ -263,6 +360,12 @@ export class InputManager {
         this.resetThumb(this.aimStick);
         this.aimJoystickData.x = 0;
         this.aimJoystickData.y = 0;
+      }
+
+      if (this.elevSlider?.active && t.identifier === this.elevSlider.touchId) {
+        this.elevSlider.active = false;
+        this.elevSlider.touchId = -1;
+        this.resetElevSlider();
       }
     }
 
@@ -309,6 +412,7 @@ export class InputManager {
       mouseScreenY: this.mouseY,
       moveAxis: new Vector2(this.moveJoystickData.x, this.moveJoystickData.y),
       aimAxis: new Vector2(this.aimJoystickData.x, this.aimJoystickData.y),
+      elevationInput: this.elevationValue,
       zoomIn: this.wheelDelta < 0,
       zoomOut: this.wheelDelta > 0,
       isMobile: this.isMobile,
@@ -328,5 +432,6 @@ export class InputManager {
     this.moveStick?.container.remove();
     this.aimStick?.container.remove();
     this.fireBtn?.remove();
+    this.elevSlider?.container.remove();
   }
 }

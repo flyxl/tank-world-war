@@ -322,14 +322,11 @@ export class PlayerTank extends Tank {
       this.turret.rotation.y += diff * lerpFactor;
     }
 
-    // Auto-elevation based on fire height to hit ground-level targets
-    const firePos = this.firePoint.getAbsolutePosition();
-    const fireHeight = firePos.y - this.root.position.y;
-    if (fireHeight > 0.3) {
-      const targetPitch = MathUtils.clamp(-fireHeight / 25, -0.25, 0);
-      const pitchDiff = targetPitch - this.turret.rotation.x;
-      this.turret.rotation.x += pitchDiff * lerpFactor;
-    }
+    // Manual elevation via slider: -1 (up) to 1 (down), mapped to pitch range
+    const elevInput = input.elevationInput;
+    const targetPitch = MathUtils.clamp(-elevInput * 0.25, -0.25, 0.12);
+    const pitchDiff = targetPitch - this.turret.rotation.x;
+    this.turret.rotation.x += pitchDiff * lerpFactor;
   }
 
   private aimTurretAtMouse(input: InputState, dt: number): void {
