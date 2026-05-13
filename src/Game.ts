@@ -1,4 +1,4 @@
-import { Engine, Scene, Vector3, Color3, Color4, DirectionalLight, HemisphericLight, DefaultRenderingPipeline, FreeCamera } from '@babylonjs/core';
+import { Engine, Scene, Vector3, Color3, Color4, DirectionalLight, HemisphericLight, DefaultRenderingPipeline, FreeCamera, Mesh } from '@babylonjs/core';
 
 import { InputManager } from './core/InputManager';
 import { CameraSystem } from './core/CameraSystem';
@@ -10,6 +10,7 @@ import { EnemyTank } from './entities/EnemyTank';
 import { Tank } from './entities/Tank';
 
 import { MapManager } from './world/MapManager';
+import { ShadowSystem } from './world/ShadowSystem';
 
 import { CombatSystem } from './systems/CombatSystem';
 import { AISystem } from './systems/AISystem';
@@ -69,6 +70,7 @@ export class Game {
   private buffIndicator: HTMLElement | null = null;
 
   private battlePipeline: DefaultRenderingPipeline | null = null;
+  private shadowSystem: ShadowSystem | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -255,8 +257,13 @@ export class Game {
 
     this.setupBattleLighting();
 
+    const sunLight = this.scene.getLightByName('sunLight') as DirectionalLight;
+    if (sunLight) {
+      this.shadowSystem = new ShadowSystem(this.scene, sunLight);
+    }
+
     this.mapManager = new MapManager(this.scene);
-    const mapConfig = this.mapManager.loadMap(mapId, null);
+    const mapConfig = this.mapManager.loadMap(mapId, this.shadowSystem?.generator ?? null);
 
     this.camera = new CameraSystem(this.scene);
     this.scene.activeCamera = this.camera.camera;
@@ -273,6 +280,11 @@ export class Game {
     const spawnPos = mapConfig.spawnPoints[0].clone() || new Vector3(0, 0, -60);
     spawnPos.y = this.mapManager.getHeightAt(spawnPos.x, spawnPos.z);
     this.player = this.tankFactory.createPlayerTank(tankType, spawnPos);
+    if (this.shadowSystem) {
+      this.player.root.getChildMeshes().forEach((m) => {
+        if (m instanceof Mesh) this.shadowSystem!.addCaster(m);
+      });
+    }
     this.player.root.setEnabled(false);
 
     const modStats = this.upgradeSystem.getModifiedStats(tankType, {
@@ -302,6 +314,14 @@ export class Game {
       this.previousEnemyAlive.set(enemy.tankId, true);
     });
 
+    for (const enemy of this.enemies) {
+      if (this.shadowSystem) {
+        enemy.root.getChildMeshes().forEach((m) => {
+          if (m instanceof Mesh) this.shadowSystem!.addCaster(m);
+        });
+      }
+    }
+
     const allTanks: Tank[] = [this.player, ...this.enemies];
     this.combat.setTanks(allTanks);
     this.ai.setEnemies(this.enemies);
@@ -317,6 +337,11 @@ export class Game {
     }
 
     await this.player.applyExternalPlayerModel(this.mapManager, tankType);
+    if (this.shadowSystem) {
+      this.player.root.getChildMeshes().forEach((m) => {
+        if (m instanceof Mesh) this.shadowSystem!.addCaster(m);
+      });
+    }
     this.player.root.setEnabled(true);
 
     this.hideLoadingUI();
@@ -649,6 +674,9 @@ export class Game {
     this.buffIndicator = null;
 
     this.mapManager?.dispose();
+
+    this.shadowSystem?.dispose();
+    this.shadowSystem = null;
 
     this.scene.lights.slice().forEach((l) => l.dispose());
     this.scene.meshes.slice().forEach((m) => m.dispose());
