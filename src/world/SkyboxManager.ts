@@ -128,13 +128,19 @@ export class SkyboxManager {
 
     const cfg = SKY_CONFIGS[theme] || SKY_CONFIGS.forest;
 
-    this.scene.clearColor = cfg.clearColor;
+    const tc = this.hexToColor3(cfg.topColor);
+    this.scene.clearColor = new Color4(tc.r, tc.g, tc.b, 1);
     this.scene.ambientColor = cfg.ambientColor;
     this.scene.fogMode = Scene.FOGMODE_EXP2;
     this.scene.fogDensity = cfg.fogDensity;
     this.scene.fogColor = cfg.fogColor;
 
-    this.skybox = MeshBuilder.CreateSphere('skybox', { diameter: 800, segments: 32 }, this.scene);
+    this.skybox = MeshBuilder.CreateCylinder('skybox', {
+      height: 600, diameterTop: 0, diameterBottom: 1200,
+      tessellation: 32, cap: Mesh.NO_CAP,
+    }, this.scene);
+    this.skybox.position.y = 50;
+
     this.skyMat = new StandardMaterial('skyboxMat', this.scene);
     this.skyMat.backFaceCulling = false;
     this.skyMat.disableLighting = true;
@@ -197,6 +203,13 @@ export class SkyboxManager {
 
     tex.update();
     return tex;
+  }
+
+  private hexToColor3(hex: string): Color3 {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    return new Color3(r, g, b);
   }
 
   private disposeSky(): void {

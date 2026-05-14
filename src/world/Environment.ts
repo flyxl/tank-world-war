@@ -55,6 +55,31 @@ export class Environment {
       this.addShadowCasters(sg, cactus);
       this.objects.push(cactus);
     }
+
+    const pebbleMat = new PBRMetallicRoughnessMaterial('pebbleMat', this.scene);
+    pebbleMat.baseColor = new Color3(0.55, 0.48, 0.35);
+    pebbleMat.roughness = 0.95;
+    for (let i = 0; i < 80; i++) {
+      const pebble = this.createRock('pebble', pebbleMat, 0.05, 0.2);
+      const x = MathUtils.randomRange(-85, 85);
+      const z = MathUtils.randomRange(-85, 85);
+      pebble.position.set(x, terrain.getHeightAt(x, z) + 0.05, z);
+      this.objects.push(pebble);
+    }
+
+    const dryGrassMat = new StandardMaterial('dryGrass', this.scene);
+    dryGrassMat.diffuseColor = new Color3(0.6, 0.55, 0.3);
+    dryGrassMat.specularColor = Color3.Black();
+    for (let i = 0; i < 60; i++) {
+      const x = MathUtils.randomRange(-80, 80);
+      const z = MathUtils.randomRange(-80, 80);
+      const blade = MeshBuilder.CreatePlane('dryGrass', { width: 0.3, height: MathUtils.randomRange(0.2, 0.5) }, this.scene);
+      blade.material = dryGrassMat;
+      blade.position.set(x, terrain.getHeightAt(x, z) + 0.15, z);
+      blade.rotation.y = Math.random() * Math.PI;
+      blade.billboardMode = Mesh.BILLBOARDMODE_Y;
+      this.objects.push(blade);
+    }
   }
 
   private generateUrban(terrain: Terrain, sg: ShadowGenerator | null): void {
@@ -67,31 +92,28 @@ export class Environment {
     rubbleMat.baseColor = new Color3(0.55, 0.52, 0.48);
     rubbleMat.roughness = 0.95;
 
+    const windowMat = new PBRMetallicRoughnessMaterial('windowMat', this.scene);
+    windowMat.baseColor = new Color3(0.15, 0.18, 0.22);
+    windowMat.metallic = 0.3;
+    windowMat.roughness = 0.3;
+
     for (let i = 0; i < 20; i++) {
-      const w = MathUtils.randomRange(3, 10);
-      const h = MathUtils.randomRange(2, 12);
-      const d = MathUtils.randomRange(3, 10);
-      const building = MeshBuilder.CreateBox('building', { width: w, height: h, depth: d }, this.scene);
-      building.material = buildingMat;
+      const bldg = this.createBuilding(buildingMat, rubbleMat, windowMat, sg);
       const x = MathUtils.randomRange(-70, 70);
       const z = MathUtils.randomRange(-70, 70);
-      building.position.set(x, h / 2 + terrain.getHeightAt(x, z), z);
-      building.rotation.y = Math.random() * Math.PI * 2;
-      sg?.addShadowCaster(building);
-      this.objects.push(building);
-      this.colliders.push(building);
+      const h = bldg.metadata?.height ?? 6;
+      bldg.position.set(x, h / 2 + terrain.getHeightAt(x, z), z);
+      bldg.rotation.y = Math.random() * Math.PI * 2;
+      this.addShadowCasters(sg, bldg);
+      this.objects.push(bldg);
+      this.colliders.push(bldg.getChildMeshes().find(m => m.name === 'building') as Mesh);
     }
 
     for (let i = 0; i < 40; i++) {
-      const rubble = MeshBuilder.CreateBox('rubble', {
-        width: MathUtils.randomRange(0.5, 2),
-        height: MathUtils.randomRange(0.3, 1),
-        depth: MathUtils.randomRange(0.5, 2),
-      }, this.scene);
-      rubble.material = rubbleMat;
+      const rubble = this.createRock('rubble', rubbleMat, 0.3, 1.0);
       const x = MathUtils.randomRange(-80, 80);
       const z = MathUtils.randomRange(-80, 80);
-      rubble.position.set(x, terrain.getHeightAt(x, z) + 0.2, z);
+      rubble.position.set(x, terrain.getHeightAt(x, z) + 0.15, z);
       rubble.rotation.set(MathUtils.randomRange(-0.3, 0.3), Math.random() * 6, MathUtils.randomRange(-0.3, 0.3));
       this.objects.push(rubble);
     }
@@ -455,6 +477,70 @@ export class Environment {
       cone.rotation.y = Math.random() * Math.PI;
     }
 
+    return root;
+  }
+
+  private createBuilding(
+    wallMat: PBRMetallicRoughnessMaterial,
+    damageMat: PBRMetallicRoughnessMaterial,
+    windowMat: PBRMetallicRoughnessMaterial,
+    sg: ShadowGenerator | null,
+  ): TransformNode {
+    const root = new TransformNode('buildingGroup', this.scene);
+    const w = MathUtils.randomRange(4, 10);
+    const h = MathUtils.randomRange(3, 12);
+    const d = MathUtils.randomRange(4, 10);
+
+    const body = MeshBuilder.CreateBox('building', { width: w, height: h, depth: d }, this.scene);
+    body.material = wallMat;
+    body.parent = root;
+
+    const floors = Math.floor(h / 3);
+    const sidesX = [-w / 2 - 0.01, w / 2 + 0.01];
+    const sidesZ = [-d / 2 - 0.01, d / 2 + 0.01];
+
+    for (let floor = 0; floor < floors; floor++) {
+      const fy = -h / 2 + 1.5 + floor * 3;
+      const windowsPerSide = Math.max(1, Math.floor(w / 2.5));
+
+      for (const sx of sidesX) {
+        for (let wi = 0; wi < windowsPerSide; wi++) {
+          const wz = -d / 2 + d * (wi + 1) / (windowsPerSide + 1);
+          const win = MeshBuilder.CreateBox('window', { width: 0.15, height: 1.2, depth: 0.8 }, this.scene);
+          win.material = windowMat;
+          win.parent = root;
+          win.position.set(sx, fy, wz);
+        }
+      }
+
+      const windowsPerZ = Math.max(1, Math.floor(d / 2.5));
+      for (const sz of sidesZ) {
+        for (let wi = 0; wi < windowsPerZ; wi++) {
+          const wx = -w / 2 + w * (wi + 1) / (windowsPerZ + 1);
+          const win = MeshBuilder.CreateBox('window', { width: 0.8, height: 1.2, depth: 0.15 }, this.scene);
+          win.material = windowMat;
+          win.parent = root;
+          win.position.set(wx, fy, sz);
+        }
+      }
+    }
+
+    if (Math.random() > 0.4) {
+      const dmgH = MathUtils.randomRange(1, h * 0.4);
+      const dmgW = MathUtils.randomRange(1, w * 0.5);
+      const dmg = MeshBuilder.CreateBox('damage', {
+        width: dmgW, height: dmgH, depth: MathUtils.randomRange(0.5, 2),
+      }, this.scene);
+      dmg.material = damageMat;
+      dmg.parent = root;
+      dmg.position.set(
+        MathUtils.randomRange(-w * 0.3, w * 0.3),
+        h / 2 - dmgH / 2,
+        d / 2 + 0.2,
+      );
+    }
+
+    root.metadata = { height: h };
     return root;
   }
 
