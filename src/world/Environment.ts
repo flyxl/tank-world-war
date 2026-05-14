@@ -201,19 +201,59 @@ export class Environment {
     bunkerMat.metallic = 0.15;
     bunkerMat.roughness = 0.9;
 
+    const slitMat = new PBRMetallicRoughnessMaterial('slitMat', this.scene);
+    slitMat.baseColor = new Color3(0.1, 0.1, 0.1);
+    slitMat.roughness = 1;
+
     for (let i = 0; i < 8; i++) {
-      const bunker = MeshBuilder.CreateBox('building', {
-        width: MathUtils.randomRange(5, 10),
-        height: MathUtils.randomRange(2, 4),
-        depth: MathUtils.randomRange(5, 8),
-      }, this.scene);
+      const root = new TransformNode('bunkerGroup', this.scene);
+      const bw = MathUtils.randomRange(5, 10);
+      const bh = MathUtils.randomRange(2, 4);
+      const bd = MathUtils.randomRange(5, 8);
+      const bunker = MeshBuilder.CreateBox('bunker', { width: bw, height: bh, depth: bd }, this.scene);
       bunker.material = bunkerMat;
+      bunker.parent = root;
+
+      const slit = MeshBuilder.CreateBox('slit', { width: bw * 0.6, height: 0.4, depth: 0.2 }, this.scene);
+      slit.material = slitMat;
+      slit.parent = root;
+      slit.position.set(0, bh * 0.2, -bd / 2 - 0.05);
+
       const x = MathUtils.randomRange(-60, 60);
       const z = MathUtils.randomRange(20, 70);
-      bunker.position.set(x, bunker.scaling.y + terrain.getHeightAt(x, z), z);
-      sg?.addShadowCaster(bunker);
-      this.objects.push(bunker);
+      root.position.set(x, bh / 2 + terrain.getHeightAt(x, z), z);
+      this.addShadowCasters(sg, root);
+      this.objects.push(root);
       this.colliders.push(bunker);
+    }
+
+    const sandbagMat = new PBRMetallicRoughnessMaterial('sandbagMat', this.scene);
+    sandbagMat.baseColor = new Color3(0.55, 0.5, 0.35);
+    sandbagMat.roughness = 0.95;
+
+    for (let i = 0; i < 25; i++) {
+      const bag = MeshBuilder.CreateCylinder('rock', {
+        height: 0.3, diameter: 0.6, tessellation: 8,
+      }, this.scene);
+      bag.material = sandbagMat;
+      bag.rotation.x = Math.PI / 2;
+      const x = MathUtils.randomRange(-70, 70);
+      const z = MathUtils.randomRange(-10, 50);
+      bag.position.set(x, terrain.getHeightAt(x, z) + 0.15, z);
+      bag.rotation.y = Math.random() * Math.PI;
+      sg?.addShadowCaster(bag);
+      this.objects.push(bag);
+    }
+
+    const beachRockMat = new PBRMetallicRoughnessMaterial('beachRock', this.scene);
+    beachRockMat.baseColor = new Color3(0.6, 0.58, 0.5);
+    beachRockMat.roughness = 0.9;
+    for (let i = 0; i < 50; i++) {
+      const peb = this.createRock('rock', beachRockMat, 0.05, 0.25);
+      const x = MathUtils.randomRange(-90, 90);
+      const z = MathUtils.randomRange(-60, -20);
+      peb.position.set(x, terrain.getHeightAt(x, z) + 0.05, z);
+      this.objects.push(peb);
     }
 
     this.addHedgerows(terrain, sg, 15);
@@ -225,33 +265,32 @@ export class Environment {
     ruinMat.baseColor = new Color3(0.4, 0.35, 0.3);
     ruinMat.roughness = 0.95;
 
+    const windowMat = new PBRMetallicRoughnessMaterial('sWindowMat', this.scene);
+    windowMat.baseColor = new Color3(0.1, 0.1, 0.12);
+    windowMat.roughness = 0.4;
+
+    const rubbleMat = new PBRMetallicRoughnessMaterial('sRubbleMat', this.scene);
+    rubbleMat.baseColor = new Color3(0.45, 0.38, 0.32);
+    rubbleMat.roughness = 0.95;
+
     for (let i = 0; i < 25; i++) {
-      const w = MathUtils.randomRange(3, 12);
-      const h = MathUtils.randomRange(1, 8);
-      const d = MathUtils.randomRange(3, 10);
-      const ruin = MeshBuilder.CreateBox('building', { width: w, height: h, depth: d }, this.scene);
-      ruin.material = ruinMat;
+      const bldg = this.createBuilding(ruinMat, rubbleMat, windowMat, sg);
       const x = MathUtils.randomRange(-75, 75);
       const z = MathUtils.randomRange(-75, 75);
-      ruin.position.set(x, h / 2 + terrain.getHeightAt(x, z), z);
-      ruin.rotation.y = Math.random() * Math.PI * 2;
-      ruin.rotation.x = MathUtils.randomRange(-0.1, 0.1);
-      sg?.addShadowCaster(ruin);
-      this.objects.push(ruin);
-      this.colliders.push(ruin);
+      const h = bldg.metadata?.height ?? 5;
+      bldg.position.set(x, h / 2 + terrain.getHeightAt(x, z), z);
+      bldg.rotation.y = Math.random() * Math.PI * 2;
+      bldg.rotation.x = MathUtils.randomRange(-0.05, 0.05);
+      this.addShadowCasters(sg, bldg);
+      this.objects.push(bldg);
+      this.colliders.push(bldg.getChildMeshes().find(m => m.name === 'building') as Mesh);
     }
 
-    for (let i = 0; i < 50; i++) {
-      const rubble = MeshBuilder.CreateBox('rubble', {
-        width: MathUtils.randomRange(0.5, 3),
-        height: MathUtils.randomRange(0.3, 1.5),
-        depth: MathUtils.randomRange(0.5, 3),
-      }, this.scene);
-      rubble.material = ruinMat;
+    for (let i = 0; i < 60; i++) {
+      const rubble = this.createRock('rubble', rubbleMat, 0.2, 1.2);
       const x = MathUtils.randomRange(-80, 80);
       const z = MathUtils.randomRange(-80, 80);
-      rubble.position.set(x, terrain.getHeightAt(x, z) + 0.2, z);
-      rubble.rotation.set(MathUtils.randomRange(-0.4, 0.4), Math.random() * 6, MathUtils.randomRange(-0.4, 0.4));
+      rubble.position.set(x, terrain.getHeightAt(x, z) + 0.1, z);
       this.objects.push(rubble);
     }
   }
@@ -295,6 +334,40 @@ export class Environment {
       this.objects.push(wall);
       this.colliders.push(wall);
     }
+
+    const grassMat = new StandardMaterial('kGrass', this.scene);
+    grassMat.diffuseColor = new Color3(0.25, 0.5, 0.15);
+    grassMat.specularColor = Color3.Black();
+    for (let i = 0; i < 120; i++) {
+      const x = MathUtils.randomRange(-85, 85);
+      const z = MathUtils.randomRange(-85, 85);
+      const blade = MeshBuilder.CreatePlane('grass', {
+        width: MathUtils.randomRange(0.15, 0.4),
+        height: MathUtils.randomRange(0.3, 0.9),
+      }, this.scene);
+      blade.material = grassMat;
+      blade.position.set(x, terrain.getHeightAt(x, z) + 0.2, z);
+      blade.rotation.y = Math.random() * Math.PI;
+      blade.billboardMode = Mesh.BILLBOARDMODE_Y;
+      this.objects.push(blade);
+    }
+
+    const flowerColors = [
+      new Color3(0.9, 0.8, 0.2),
+      new Color3(0.9, 0.3, 0.3),
+      new Color3(0.8, 0.5, 0.8),
+    ];
+    for (let i = 0; i < 40; i++) {
+      const flowerMat = new StandardMaterial(`flower${i}`, this.scene);
+      flowerMat.diffuseColor = flowerColors[i % flowerColors.length];
+      flowerMat.specularColor = Color3.Black();
+      const x = MathUtils.randomRange(-80, 80);
+      const z = MathUtils.randomRange(-80, 80);
+      const flower = MeshBuilder.CreateSphere('flower', { diameter: 0.2, segments: 4 }, this.scene);
+      flower.material = flowerMat;
+      flower.position.set(x, terrain.getHeightAt(x, z) + 0.3, z);
+      this.objects.push(flower);
+    }
   }
 
   private generateArdennes(terrain: Terrain, sg: ShadowGenerator | null): void {
@@ -331,6 +404,35 @@ export class Environment {
       this.objects.push(rock);
       this.colliders.push(rock);
     }
+
+    const snowPatchMat = new StandardMaterial('snowPatch', this.scene);
+    snowPatchMat.diffuseColor = new Color3(0.9, 0.92, 0.95);
+    snowPatchMat.specularColor = new Color3(0.3, 0.3, 0.35);
+    for (let i = 0; i < 30; i++) {
+      const patch = MeshBuilder.CreateDisc('snow', {
+        radius: MathUtils.randomRange(1, 4), tessellation: 8,
+      }, this.scene);
+      patch.material = snowPatchMat;
+      const x = MathUtils.randomRange(-85, 85);
+      const z = MathUtils.randomRange(-85, 85);
+      patch.position.set(x, terrain.getHeightAt(x, z) + 0.02, z);
+      patch.rotation.x = Math.PI / 2;
+      this.objects.push(patch);
+    }
+
+    const deadLeafMat = new StandardMaterial('deadLeaf', this.scene);
+    deadLeafMat.diffuseColor = new Color3(0.5, 0.35, 0.15);
+    deadLeafMat.specularColor = Color3.Black();
+    for (let i = 0; i < 80; i++) {
+      const leaf = MeshBuilder.CreateDisc('leaf', { radius: 0.1, tessellation: 5 }, this.scene);
+      leaf.material = deadLeafMat;
+      const x = MathUtils.randomRange(-85, 85);
+      const z = MathUtils.randomRange(-85, 85);
+      leaf.position.set(x, terrain.getHeightAt(x, z) + 0.03, z);
+      leaf.rotation.x = MathUtils.randomRange(1.3, 1.7);
+      leaf.rotation.y = Math.random() * Math.PI * 2;
+      this.objects.push(leaf);
+    }
   }
 
   private addHedgerows(terrain: Terrain, sg: ShadowGenerator | null, count: number): void {
@@ -339,19 +441,33 @@ export class Environment {
     hedgeMat.roughness = 0.9;
 
     for (let i = 0; i < count; i++) {
-      const hedge = MeshBuilder.CreateBox('rock', {
-        width: MathUtils.randomRange(4, 12),
-        height: MathUtils.randomRange(1.5, 3),
-        depth: MathUtils.randomRange(1, 2),
-      }, this.scene);
-      hedge.material = hedgeMat;
+      const root = new TransformNode('hedgeGroup', this.scene);
+      const segCount = MathUtils.randomInt(2, 5);
+      const totalLen = MathUtils.randomRange(4, 12);
+      const hh = MathUtils.randomRange(1.5, 3);
+
+      for (let s = 0; s < segCount; s++) {
+        const seg = MeshBuilder.CreateSphere('hedge', {
+          diameterX: totalLen / segCount * 1.3,
+          diameterY: hh,
+          diameterZ: MathUtils.randomRange(1, 2.5),
+          segments: 5,
+        }, this.scene);
+        seg.material = hedgeMat;
+        seg.parent = root;
+        seg.position.x = (s - segCount / 2) * (totalLen / segCount) * 0.8;
+        seg.position.y = hh * 0.4;
+      }
+
       const x = MathUtils.randomRange(-80, 80);
       const z = MathUtils.randomRange(-80, 80);
-      hedge.position.set(x, terrain.getHeightAt(x, z) + 0.5, z);
-      hedge.rotation.y = Math.random() * Math.PI;
-      sg?.addShadowCaster(hedge);
-      this.objects.push(hedge);
-      this.colliders.push(hedge);
+      root.position.set(x, terrain.getHeightAt(x, z), z);
+      root.rotation.y = Math.random() * Math.PI;
+      this.addShadowCasters(sg, root);
+      this.objects.push(root);
+      root.getChildMeshes().forEach(m => {
+        if (m instanceof Mesh) this.colliders.push(m);
+      });
     }
   }
 
