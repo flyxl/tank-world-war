@@ -1,105 +1,87 @@
-import { Scene, MeshBuilder, StandardMaterial, Color3, Color4, Texture, DynamicTexture, Mesh } from '@babylonjs/core';
+import {
+  Scene, MeshBuilder, Mesh, HDRCubeTexture,
+  StandardMaterial, Color3, Color4,
+} from '@babylonjs/core';
+import { DeviceDetector } from '../utils/DeviceDetector';
 
-export type SkyTheme = 'desert' | 'urban' | 'forest' | 'snow';
+export type SkyTheme = 'desert' | 'urban' | 'forest' | 'snow'
+  | 'normandy' | 'stalingrad' | 'kursk' | 'ardennes';
+
+const SKY_HDR_MAP: Record<SkyTheme, string> = {
+  desert: 'assets/skyboxes/desert.hdr',
+  urban: 'assets/skyboxes/overcast.hdr',
+  forest: 'assets/skyboxes/clear.hdr',
+  snow: 'assets/skyboxes/winter.hdr',
+  normandy: 'assets/skyboxes/stormy.hdr',
+  stalingrad: 'assets/skyboxes/smoky.hdr',
+  kursk: 'assets/skyboxes/clear.hdr',
+  ardennes: 'assets/skyboxes/winter.hdr',
+};
+
+const SKY_AMBIENT: Record<SkyTheme, { clear: Color4; ambient: Color3 }> = {
+  desert:      { clear: new Color4(0.85, 0.65, 0.4, 1),  ambient: new Color3(0.6, 0.5, 0.35) },
+  urban:       { clear: new Color4(0.5, 0.52, 0.55, 1),  ambient: new Color3(0.4, 0.4, 0.42) },
+  forest:      { clear: new Color4(0.45, 0.6, 0.8, 1),   ambient: new Color3(0.35, 0.45, 0.35) },
+  snow:        { clear: new Color4(0.75, 0.8, 0.85, 1),  ambient: new Color3(0.6, 0.65, 0.7) },
+  normandy:    { clear: new Color4(0.5, 0.55, 0.6, 1),   ambient: new Color3(0.4, 0.42, 0.45) },
+  stalingrad:  { clear: new Color4(0.35, 0.28, 0.25, 1), ambient: new Color3(0.3, 0.25, 0.22) },
+  kursk:       { clear: new Color4(0.5, 0.65, 0.85, 1),  ambient: new Color3(0.4, 0.5, 0.4) },
+  ardennes:    { clear: new Color4(0.6, 0.65, 0.7, 1),   ambient: new Color3(0.5, 0.52, 0.55) },
+};
 
 export class SkyboxManager {
-  private skybox: Mesh;
-  private skyMat: StandardMaterial;
+  private skybox: Mesh | null = null;
+  private currentHdr: HDRCubeTexture | null = null;
 
-  constructor(private scene: Scene) {
-    this.skybox = MeshBuilder.CreateBox('skybox', { size: 500 }, scene);
-    this.skyMat = new StandardMaterial('skyboxMat', scene);
-    this.skyMat.backFaceCulling = false;
-    this.skyMat.disableLighting = true;
-    this.skybox.material = this.skyMat;
-    this.skybox.infiniteDistance = true;
-    this.skybox.renderingGroupId = 0;
-
-    this.setTheme('forest');
-  }
+  constructor(private scene: Scene) {}
 
   setTheme(theme: SkyTheme): void {
-    const tex = this.createSkyTexture(theme);
-    this.skyMat.emissiveTexture = tex;
-    this.skyMat.emissiveColor = Color3.White();
-    this.skyMat.diffuseColor = Color3.Black();
+    this.disposeSky();
 
-    switch (theme) {
-      case 'desert':
-        this.scene.clearColor = new Color4(0.85, 0.65, 0.4, 1);
-        this.scene.ambientColor = new Color3(0.6, 0.5, 0.35);
-        break;
-      case 'urban':
-        this.scene.clearColor = new Color4(0.5, 0.52, 0.55, 1);
-        this.scene.ambientColor = new Color3(0.4, 0.4, 0.42);
-        break;
-      case 'forest':
-        this.scene.clearColor = new Color4(0.45, 0.6, 0.8, 1);
-        this.scene.ambientColor = new Color3(0.35, 0.45, 0.35);
-        break;
-      case 'snow':
-        this.scene.clearColor = new Color4(0.75, 0.8, 0.85, 1);
-        this.scene.ambientColor = new Color3(0.6, 0.65, 0.7);
-        break;
+    const hdrPath = SKY_HDR_MAP[theme];
+    const colors = SKY_AMBIENT[theme] || SKY_AMBIENT.forest;
+
+    this.scene.clearColor = colors.clear;
+    this.scene.ambientColor = colors.ambient;
+
+    const size = DeviceDetector.isMobile() ? 256 : 512;
+
+    try {
+      this.currentHdr = new HDRCubeTexture(hdrPath, this.scene, size);
+      this.scene.environmentTexture = this.currentHdr;
+      this.skybox = this.scene.createDefaultSkybox(this.currentHdr, true, 1000, 0.3) as Mesh;
+    } catch {
+      this.createFallbackSky();
     }
   }
 
-  private createSkyTexture(theme: SkyTheme): DynamicTexture {
-    const size = 256;
-    const tex = new DynamicTexture('skyTex', size, this.scene, false);
-    const ctx = tex.getContext();
+  getSkyboxMesh(): Mesh | null {
+    return this.skybox;
+  }
 
-    let topColor: string, midColor: string, bottomColor: string;
+  private createFallbackSky(): void {
+    this.skybox = MeshBuilder.CreateBox('skybox', { size: 500 }, this.scene);
+    const mat = new StandardMaterial('skyMat', this.scene);
+    mat.backFaceCulling = false;
+    mat.disableLighting = true;
+    mat.emissiveColor = new Color3(0.3, 0.4, 0.5);
+    this.skybox.material = mat;
+    this.skybox.infiniteDistance = true;
+  }
 
-    switch (theme) {
-      case 'desert':
-        topColor = '#1a3a6e';
-        midColor = '#e8a953';
-        bottomColor = '#d4915a';
-        break;
-      case 'urban':
-        topColor = '#4a5568';
-        midColor = '#8899aa';
-        bottomColor = '#a0aab4';
-        break;
-      case 'forest':
-        topColor = '#1e5799';
-        midColor = '#7db9e8';
-        bottomColor = '#a8d8f0';
-        break;
-      case 'snow':
-        topColor = '#607d8b';
-        midColor = '#b0bec5';
-        bottomColor = '#cfd8dc';
-        break;
-    }
-
-    const gradient = ctx.createLinearGradient(0, 0, 0, size);
-    gradient.addColorStop(0, topColor);
-    gradient.addColorStop(0.4, midColor);
-    gradient.addColorStop(1, bottomColor);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
-
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    for (let i = 0; i < 15; i++) {
-      const cx = Math.random() * size;
-      const cy = Math.random() * size * 0.5;
-      const w = 20 + Math.random() * 40;
-      const h = 5 + Math.random() * 10;
-      ctx.beginPath();
-      (ctx as any).ellipse?.(cx, cy, w, h, 0, 0, Math.PI * 2);
-      if (!(ctx as any).ellipse) {
-        ctx.arc(cx, cy, w, 0, Math.PI * 2);
+  private disposeSky(): void {
+    this.skybox?.dispose();
+    this.skybox = null;
+    if (this.currentHdr) {
+      if (this.scene.environmentTexture === this.currentHdr) {
+        this.scene.environmentTexture = null;
       }
-      ctx.fill();
+      this.currentHdr.dispose();
+      this.currentHdr = null;
     }
-
-    tex.update();
-    return tex;
   }
 
   dispose(): void {
-    this.skybox.dispose();
+    this.disposeSky();
   }
 }

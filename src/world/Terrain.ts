@@ -1,4 +1,4 @@
-import { Scene, Mesh, MeshBuilder, VertexData, PBRMetallicRoughnessMaterial, Color3, Vector3, DynamicTexture } from '@babylonjs/core';
+import { Scene, Mesh, MeshBuilder, VertexData, PBRMetallicRoughnessMaterial, PBRMaterial, Color3, Vector3, DynamicTexture, Texture } from '@babylonjs/core';
 
 export interface TerrainConfig {
   size: number;
@@ -8,6 +8,11 @@ export interface TerrainConfig {
   baseColor: Color3;
   detailColor: Color3;
   roughness: number;
+  primaryTexture?: string;
+  secondaryTexture?: string;
+  blendMode?: 'height' | 'random';
+  blendThreshold?: number;
+  uvScale?: number;
 }
 
 export class Terrain {
@@ -21,11 +26,12 @@ export class Terrain {
     this.config = config;
     this.size = config.size;
     this.subdivisions = config.subdivisions;
-    this.generateTerrain();
+    this.generateMesh();
+    this.applyMaterial();
   }
 
-  private generateTerrain(): void {
-    const { size, subdivisions, maxHeight, seed, baseColor, detailColor, roughness } = this.config;
+  private generateMesh(): void {
+    const { size, subdivisions, maxHeight, seed } = this.config;
     const vertexCount = (subdivisions + 1) * (subdivisions + 1);
     this.heightData = new Float32Array(vertexCount);
 
@@ -61,7 +67,44 @@ export class Terrain {
         this.mesh.updateVerticesData('normal', normals);
       }
     }
+  }
 
+  private applyMaterial(): void {
+    const { roughness, primaryTexture, uvScale } = this.config;
+    const tileScale = uvScale ?? 20;
+
+    if (primaryTexture) {
+      const mat = new PBRMaterial('terrainMat', this.scene);
+      mat.metallic = 0;
+      mat.roughness = roughness;
+
+      const albedo = new Texture(`assets/textures/${primaryTexture}/albedo.jpg`, this.scene);
+      albedo.uScale = tileScale;
+      albedo.vScale = tileScale;
+      mat.albedoTexture = albedo;
+
+      const normal = new Texture(`assets/textures/${primaryTexture}/normal.jpg`, this.scene);
+      normal.uScale = tileScale;
+      normal.vScale = tileScale;
+      mat.bumpTexture = normal;
+
+      const rough = new Texture(`assets/textures/${primaryTexture}/roughness.jpg`, this.scene);
+      rough.uScale = tileScale;
+      rough.vScale = tileScale;
+      mat.metallicTexture = rough;
+      mat.useRoughnessFromMetallicTextureAlpha = false;
+      mat.useRoughnessFromMetallicTextureGreen = true;
+
+      this.mesh.material = mat;
+    } else {
+      this.applyFallbackMaterial();
+    }
+
+    this.mesh.receiveShadows = true;
+  }
+
+  private applyFallbackMaterial(): void {
+    const { baseColor, detailColor, roughness, seed } = this.config;
     const texSize = 512;
     const groundTex = new DynamicTexture('terrainTex', texSize, this.scene, true);
     const ctx = groundTex.getContext();
@@ -86,7 +129,6 @@ export class Terrain {
     mat.metallic = 0.0;
     mat.roughness = roughness;
     this.mesh.material = mat;
-    this.mesh.receiveShadows = true;
   }
 
   getHeightAt(x: number, z: number): number {
@@ -116,7 +158,7 @@ export class Terrain {
     return h00 * (1 - ti) * (1 - tj) + h10 * ti * (1 - tj) + h01 * (1 - ti) * tj + h11 * ti * tj;
   }
 
-  private noise(x: number, y: number, seed: number): number {
+  noise(x: number, y: number, seed: number): number {
     let val = 0;
     let amp = 1;
     let freq = 1;

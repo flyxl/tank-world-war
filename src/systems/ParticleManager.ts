@@ -1,4 +1,5 @@
-import { Scene, ParticleSystem, Vector3, Color4, Texture } from '@babylonjs/core';
+import { Scene, ParticleSystem, Vector3, Color4, Texture, AbstractMesh } from '@babylonjs/core';
+import { DeviceDetector } from '../utils/DeviceDetector';
 
 export class ParticleManager {
   private activeSystems: ParticleSystem[] = [];
@@ -231,6 +232,133 @@ export class ParticleManager {
     setTimeout(() => this.createExplosion(position.add(new Vector3(1.8, 0.6, 0.6)), 1.8), 80);
     setTimeout(() => this.createExplosion(position.add(new Vector3(-1, 1.2, -0.5)), 1.2), 200);
     setTimeout(() => this.createExplosion(position.add(new Vector3(0.3, 0.3, 1.2)), 1.0), 350);
+  }
+
+  createDustTrail(emitter: AbstractMesh, theme: string): ParticleSystem {
+    const dust = new ParticleSystem('dustTrail', 30, this.scene);
+    dust.particleTexture = this.particleTex;
+    dust.emitter = emitter;
+    dust.createConeEmitter(0.5, Math.PI / 4);
+    dust.minSize = 0.3;
+    dust.maxSize = 1.5;
+    dust.minLifeTime = 0.5;
+    dust.maxLifeTime = 2.0;
+    dust.emitRate = 0;
+    dust.minEmitPower = 0.5;
+    dust.maxEmitPower = 2;
+    dust.gravity = new Vector3(0, 1, 0);
+
+    const c = this.getDustColors(theme);
+    dust.color1 = c.color1;
+    dust.color2 = c.color2;
+    dust.colorDead = c.colorDead;
+    dust.blendMode = ParticleSystem.BLENDMODE_STANDARD;
+    dust.start();
+    this.activeSystems.push(dust);
+    return dust;
+  }
+
+  private getDustColors(theme: string): { color1: Color4; color2: Color4; colorDead: Color4 } {
+    switch (theme) {
+      case 'desert': case 'normandy':
+        return { color1: new Color4(0.76, 0.65, 0.42, 0.6), color2: new Color4(0.68, 0.55, 0.35, 0.4), colorDead: new Color4(0.6, 0.5, 0.3, 0) };
+      case 'snow': case 'ardennes':
+        return { color1: new Color4(0.9, 0.92, 0.95, 0.7), color2: new Color4(0.85, 0.88, 0.92, 0.5), colorDead: new Color4(0.8, 0.82, 0.85, 0) };
+      case 'forest': case 'kursk':
+        return { color1: new Color4(0.45, 0.35, 0.2, 0.5), color2: new Color4(0.4, 0.3, 0.18, 0.3), colorDead: new Color4(0.3, 0.25, 0.15, 0) };
+      default:
+        return { color1: new Color4(0.5, 0.48, 0.45, 0.6), color2: new Color4(0.4, 0.38, 0.35, 0.4), colorDead: new Color4(0.3, 0.28, 0.25, 0) };
+    }
+  }
+
+  createBurningDebris(position: Vector3): void {
+    const fire = new ParticleSystem('burning', 60, this.scene);
+    fire.particleTexture = this.particleTex;
+    fire.createConeEmitter(0.5, Math.PI / 8);
+    fire.emitter = position.clone();
+    fire.minSize = 0.3;
+    fire.maxSize = 1.2;
+    fire.minLifeTime = 0.3;
+    fire.maxLifeTime = 1.0;
+    fire.emitRate = 40;
+    fire.color1 = new Color4(1, 0.7, 0.2, 0.9);
+    fire.color2 = new Color4(1, 0.3, 0.05, 0.7);
+    fire.colorDead = new Color4(0.3, 0.1, 0, 0);
+    fire.minEmitPower = 1;
+    fire.maxEmitPower = 4;
+    fire.gravity = new Vector3(0, 3, 0);
+    fire.blendMode = ParticleSystem.BLENDMODE_ADD;
+    fire.start();
+
+    const smoke = new ParticleSystem('burnSmoke', 40, this.scene);
+    smoke.particleTexture = this.particleTex;
+    smoke.createConeEmitter(0.3, Math.PI / 6);
+    smoke.emitter = position.add(new Vector3(0, 1.5, 0));
+    smoke.minSize = 1.0;
+    smoke.maxSize = 4.0;
+    smoke.minLifeTime = 1.5;
+    smoke.maxLifeTime = 5.0;
+    smoke.emitRate = 15;
+    smoke.color1 = new Color4(0.2, 0.18, 0.15, 0.6);
+    smoke.color2 = new Color4(0.15, 0.13, 0.1, 0.4);
+    smoke.colorDead = new Color4(0.1, 0.1, 0.1, 0);
+    smoke.minEmitPower = 0.5;
+    smoke.maxEmitPower = 2;
+    smoke.gravity = new Vector3(0, 4, 0);
+    smoke.blendMode = ParticleSystem.BLENDMODE_STANDARD;
+    smoke.start();
+
+    this.activeSystems.push(fire, smoke);
+    setTimeout(() => { fire.stop(); smoke.stop(); }, 12000);
+  }
+
+  createEnvironmentParticles(theme: string): ParticleSystem | null {
+    if (DeviceDetector.isMobile()) return null;
+
+    const env = new ParticleSystem('envParticles', 100, this.scene);
+    env.particleTexture = this.particleTex;
+    env.createBoxEmitter(
+      new Vector3(-1, -0.5, -1), new Vector3(1, 0.5, 1),
+      new Vector3(-40, 10, -40), new Vector3(40, 20, 40)
+    );
+    env.emitter = new Vector3(0, 15, 0);
+    env.minLifeTime = 3;
+    env.maxLifeTime = 8;
+    env.emitRate = 30;
+    env.minEmitPower = 0.2;
+    env.maxEmitPower = 1;
+
+    switch (theme) {
+      case 'desert':
+        env.minSize = 0.05; env.maxSize = 0.15;
+        env.gravity = new Vector3(2, -0.3, 1);
+        env.color1 = new Color4(0.76, 0.65, 0.42, 0.4);
+        env.color2 = new Color4(0.68, 0.55, 0.35, 0.2);
+        env.colorDead = new Color4(0.6, 0.5, 0.3, 0);
+        break;
+      case 'forest': case 'kursk':
+        env.minSize = 0.08; env.maxSize = 0.2;
+        env.gravity = new Vector3(0.5, -1, 0.3);
+        env.color1 = new Color4(0.4, 0.5, 0.15, 0.6);
+        env.color2 = new Color4(0.5, 0.4, 0.1, 0.4);
+        env.colorDead = new Color4(0.3, 0.25, 0.1, 0);
+        break;
+      case 'stalingrad':
+        env.minSize = 0.03; env.maxSize = 0.1;
+        env.gravity = new Vector3(0.3, 1, 0.2);
+        env.color1 = new Color4(1, 0.5, 0.15, 0.5);
+        env.color2 = new Color4(1, 0.3, 0.05, 0.3);
+        env.colorDead = new Color4(0.5, 0.15, 0, 0);
+        env.blendMode = ParticleSystem.BLENDMODE_ADD;
+        break;
+      default:
+        env.dispose();
+        return null;
+    }
+
+    env.start();
+    this.activeSystems.push(env);
+    return env;
   }
 
   cleanup(): void {
