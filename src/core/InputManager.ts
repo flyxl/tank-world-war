@@ -402,6 +402,12 @@ export class InputManager {
   }
 
   getState(): InputState {
+    if (!this.isMobile) {
+      const elevSpeed = 0.03;
+      if (this.keys.has('KeyQ')) this.elevationValue = Math.min(1, this.elevationValue + elevSpeed);
+      if (this.keys.has('KeyE')) this.elevationValue = Math.max(-1, this.elevationValue - elevSpeed);
+    }
+
     const state: InputState = {
       moveForward: this.keys.has('KeyW') || this.keys.has('ArrowUp'),
       moveBackward: this.keys.has('KeyS') || this.keys.has('ArrowDown'),

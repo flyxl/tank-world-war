@@ -322,9 +322,8 @@ export class PlayerTank extends Tank {
       this.turret.rotation.y += diff * lerpFactor;
     }
 
-    // Manual elevation via slider: -1 (up) to 1 (down), mapped to pitch range
     const elevInput = input.elevationInput;
-    const targetPitch = MathUtils.clamp(-elevInput * 0.25, -0.25, 0.12);
+    const targetPitch = MathUtils.clamp(-elevInput * 0.4, -0.4, 0.15);
     const pitchDiff = targetPitch - this.turret.rotation.x;
     this.turret.rotation.x += pitchDiff * lerpFactor;
   }
@@ -368,16 +367,10 @@ export class PlayerTank extends Tank {
       this.turret.rotation.y += diff * lerpFactor;
     }
 
-    // Elevation: aim barrel down toward ground hit point
-    const firePos = this.firePoint.getAbsolutePosition();
-    const toTarget = hitPoint.subtract(firePos);
-    const horizontalDist = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
-    if (horizontalDist > 0.5) {
-      const targetPitch = Math.atan2(-toTarget.y, horizontalDist);
-      const clampedPitch = MathUtils.clamp(targetPitch, -0.25, 0.12);
-      const pitchDiff = clampedPitch - this.turret.rotation.x;
-      this.turret.rotation.x += pitchDiff * lerpFactor;
-    }
+    const elevInput = input.elevationInput;
+    const targetPitch = MathUtils.clamp(-elevInput * 0.4, -0.4, 0.15);
+    const pitchDiff = targetPitch - this.turret.rotation.x;
+    this.turret.rotation.x += pitchDiff * lerpFactor;
   }
 
   private updateBodyScaleFromModel(meshes: Mesh[]): void {
