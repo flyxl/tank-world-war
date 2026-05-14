@@ -365,7 +365,6 @@ export class InputManager {
       if (this.elevSlider?.active && t.identifier === this.elevSlider.touchId) {
         this.elevSlider.active = false;
         this.elevSlider.touchId = -1;
-        this.resetElevSlider();
       }
     }
 

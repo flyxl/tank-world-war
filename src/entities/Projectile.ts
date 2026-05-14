@@ -43,7 +43,7 @@ export class Projectile {
     if (!this.alive) return;
     this.age += dt;
 
-    this.velocity.y -= 9.81 * dt * 0.15;
+    this.velocity.y -= 9.81 * dt * 0.5;
     this.mesh.position.addInPlace(this.velocity.scale(dt));
 
     if (this.mesh.position.y < -1 || this.age > this.lifetime) {
