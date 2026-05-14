@@ -1,4 +1,4 @@
-import { Scene, Mesh, MeshBuilder, Vector3, PBRMetallicRoughnessMaterial, StandardMaterial, Color3, ShadowGenerator, TransformNode } from '@babylonjs/core';
+import { Scene, Mesh, MeshBuilder, Vector3, VertexData, PBRMetallicRoughnessMaterial, StandardMaterial, Color3, ShadowGenerator, TransformNode } from '@babylonjs/core';
 import { MathUtils } from '../utils/MathUtils';
 import { Terrain } from './Terrain';
 
@@ -33,17 +33,11 @@ export class Environment {
     rockMat.roughness = 0.9;
 
     for (let i = 0; i < 30; i++) {
-      const rock = MeshBuilder.CreateBox('rock', {
-        width: MathUtils.randomRange(1, 4),
-        height: MathUtils.randomRange(0.5, 3),
-        depth: MathUtils.randomRange(1, 4),
-      }, this.scene);
-      rock.material = rockMat;
+      const rock = this.createRock('rock', rockMat, 0.5, 2.0);
       const x = MathUtils.randomRange(-80, 80);
       const z = MathUtils.randomRange(-80, 80);
-      rock.position.set(x, terrain.getHeightAt(x, z), z);
+      rock.position.set(x, terrain.getHeightAt(x, z) + 0.3, z);
       rock.rotation.y = Math.random() * Math.PI * 2;
-      rock.rotation.x = MathUtils.randomRange(-0.2, 0.2);
       sg?.addShadowCaster(rock);
       this.objects.push(rock);
       this.colliders.push(rock);
@@ -148,15 +142,10 @@ export class Environment {
     snowRockMat.roughness = 0.85;
 
     for (let i = 0; i < 35; i++) {
-      const rock = MeshBuilder.CreateBox('snowRock', {
-        width: MathUtils.randomRange(1, 5),
-        height: MathUtils.randomRange(1, 4),
-        depth: MathUtils.randomRange(1, 5),
-      }, this.scene);
-      rock.material = snowRockMat;
+      const rock = this.createRock('snowRock', snowRockMat, 0.8, 2.5);
       const x = MathUtils.randomRange(-80, 80);
       const z = MathUtils.randomRange(-80, 80);
-      rock.position.set(x, terrain.getHeightAt(x, z), z);
+      rock.position.set(x, terrain.getHeightAt(x, z) + 0.3, z);
       rock.rotation.y = Math.random() * Math.PI * 2;
       sg?.addShadowCaster(rock);
       this.objects.push(rock);
@@ -311,15 +300,10 @@ export class Environment {
     snowRockMat.roughness = 0.85;
 
     for (let i = 0; i < 20; i++) {
-      const rock = MeshBuilder.CreateBox('snowRock', {
-        width: MathUtils.randomRange(1, 4),
-        height: MathUtils.randomRange(1, 3),
-        depth: MathUtils.randomRange(1, 4),
-      }, this.scene);
-      rock.material = snowRockMat;
+      const rock = this.createRock('snowRock', snowRockMat, 0.6, 2.0);
       const x = MathUtils.randomRange(-80, 80);
       const z = MathUtils.randomRange(-80, 80);
-      rock.position.set(x, terrain.getHeightAt(x, z), z);
+      rock.position.set(x, terrain.getHeightAt(x, z) + 0.3, z);
       rock.rotation.y = Math.random() * Math.PI * 2;
       sg?.addShadowCaster(rock);
       this.objects.push(rock);
@@ -392,42 +376,111 @@ export class Environment {
 
   private createTree(trunkMat: PBRMetallicRoughnessMaterial, leafMat: PBRMetallicRoughnessMaterial): TransformNode {
     const root = new TransformNode('tree', this.scene);
-    const h = MathUtils.randomRange(3, 6);
+    const h = MathUtils.randomRange(4, 7);
 
-    const trunk = MeshBuilder.CreateCylinder('trunk', { height: h, diameterTop: 0.2, diameterBottom: 0.4, tessellation: 8 }, this.scene);
+    const trunk = MeshBuilder.CreateCylinder('trunk', {
+      height: h, diameterTop: 0.15, diameterBottom: 0.5, tessellation: 8,
+    }, this.scene);
     trunk.material = trunkMat;
     trunk.parent = root;
     trunk.position.y = h / 2;
 
-    const leafSize = MathUtils.randomRange(1.5, 3);
-    const leaves = MeshBuilder.CreateSphere('leaves', { diameter: leafSize, segments: 6 }, this.scene);
-    leaves.material = leafMat;
-    leaves.parent = root;
-    leaves.position.y = h;
-    leaves.scaling.y = 0.7;
+    const branchCount = MathUtils.randomInt(2, 4);
+    for (let b = 0; b < branchCount; b++) {
+      const bh = h * MathUtils.randomRange(0.4, 0.7);
+      const branch = MeshBuilder.CreateCylinder('branch', {
+        height: MathUtils.randomRange(1, 2.5),
+        diameterTop: 0.05,
+        diameterBottom: 0.12,
+        tessellation: 6,
+      }, this.scene);
+      branch.material = trunkMat;
+      branch.parent = root;
+      branch.position.y = bh;
+      branch.rotation.z = MathUtils.randomRange(0.5, 1.2) * (b % 2 === 0 ? 1 : -1);
+      branch.rotation.y = (b / branchCount) * Math.PI * 2;
+      branch.position.x = Math.sin(branch.rotation.y) * 0.3;
+      branch.position.z = Math.cos(branch.rotation.y) * 0.3;
+    }
+
+    const clusterCount = MathUtils.randomInt(3, 6);
+    for (let c = 0; c < clusterCount; c++) {
+      const leafSize = MathUtils.randomRange(1.0, 2.0);
+      const leaf = MeshBuilder.CreateSphere('leaves', { diameter: leafSize, segments: 5 }, this.scene);
+      leaf.material = leafMat;
+      leaf.parent = root;
+      const angle = (c / clusterCount) * Math.PI * 2 + Math.random() * 0.5;
+      const dist = MathUtils.randomRange(0.3, 1.5);
+      leaf.position.set(
+        Math.sin(angle) * dist,
+        h * MathUtils.randomRange(0.7, 1.0) + MathUtils.randomRange(-0.5, 0.5),
+        Math.cos(angle) * dist,
+      );
+      leaf.scaling.set(
+        MathUtils.randomRange(0.8, 1.3),
+        MathUtils.randomRange(0.6, 1.0),
+        MathUtils.randomRange(0.8, 1.3),
+      );
+    }
 
     return root;
   }
 
   private createPineTree(trunkMat: PBRMetallicRoughnessMaterial, pineMat: PBRMetallicRoughnessMaterial): TransformNode {
     const root = new TransformNode('pine', this.scene);
-    const h = MathUtils.randomRange(4, 8);
+    const h = MathUtils.randomRange(5, 10);
 
-    const trunk = MeshBuilder.CreateCylinder('trunk', { height: h, diameterTop: 0.1, diameterBottom: 0.3, tessellation: 8 }, this.scene);
+    const trunk = MeshBuilder.CreateCylinder('trunk', {
+      height: h, diameterTop: 0.08, diameterBottom: 0.35, tessellation: 8,
+    }, this.scene);
     trunk.material = trunkMat;
     trunk.parent = root;
     trunk.position.y = h / 2;
 
-    for (let layer = 0; layer < 3; layer++) {
-      const y = h * 0.4 + (h * 0.5 * layer) / 3;
-      const size = (1.5 - layer * 0.3);
-      const cone = MeshBuilder.CreateCylinder('pineLayer', { height: h * 0.25, diameterTop: 0, diameterBottom: size * 2, tessellation: 8 }, this.scene);
+    const layers = MathUtils.randomInt(4, 7);
+    for (let layer = 0; layer < layers; layer++) {
+      const t = layer / (layers - 1);
+      const y = h * (0.3 + t * 0.65);
+      const size = (2.2 - t * 1.8) * MathUtils.randomRange(0.8, 1.2);
+      const layerH = h * MathUtils.randomRange(0.12, 0.2);
+      const cone = MeshBuilder.CreateCylinder('pineLayer', {
+        height: layerH,
+        diameterTop: size * 0.15,
+        diameterBottom: size * 2,
+        tessellation: 8,
+      }, this.scene);
       cone.material = pineMat;
       cone.parent = root;
       cone.position.y = y;
+      cone.rotation.y = Math.random() * Math.PI;
     }
 
     return root;
+  }
+
+  private createRock(name: string, mat: PBRMetallicRoughnessMaterial, minSize: number, maxSize: number): Mesh {
+    const rock = MeshBuilder.CreateIcoSphere(name, {
+      radius: MathUtils.randomRange(minSize, maxSize),
+      subdivisions: MathUtils.randomInt(2, 3),
+    }, this.scene);
+
+    const positions = rock.getVerticesData('position');
+    if (positions) {
+      for (let i = 0; i < positions.length; i += 3) {
+        positions[i] *= MathUtils.randomRange(0.7, 1.4);
+        positions[i + 1] *= MathUtils.randomRange(0.5, 1.1);
+        positions[i + 2] *= MathUtils.randomRange(0.7, 1.4);
+      }
+      rock.updateVerticesData('position', positions);
+      const normals = rock.getVerticesData('normal');
+      if (normals) {
+        VertexData.ComputeNormals(positions, rock.getIndices(), normals);
+        rock.updateVerticesData('normal', normals);
+      }
+    }
+
+    rock.material = mat;
+    return rock;
   }
 
   private addShadowCasters(sg: ShadowGenerator | null, node: TransformNode): void {

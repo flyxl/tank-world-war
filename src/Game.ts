@@ -438,13 +438,17 @@ export class Game {
 
     for (const mesh of this.scene.meshes) {
       const n = mesh.name;
-      let obstRadius = 0;
-      if (n.startsWith('building')) obstRadius = 2.5;
-      else if (n.startsWith('rock') || n.startsWith('snowRock')) obstRadius = 1.2;
-      else if (n === 'trunk' || n === 'cTrunk') obstRadius = 0.5;
-      else continue;
+      if (!n.startsWith('building') && !n.startsWith('rock') && !n.startsWith('snowRock')
+          && n !== 'trunk' && n !== 'cTrunk' && !n.startsWith('hedge') && !n.startsWith('bunker')) {
+        continue;
+      }
 
       const mp = mesh.getAbsolutePosition();
+      const bi = mesh.getBoundingInfo();
+      const ext = bi.boundingBox.extendSizeWorld;
+      const obstRadius = Math.max(ext.x, ext.z) * 0.8;
+      if (obstRadius < 0.2) continue;
+
       const dx = pos.x - mp.x;
       const dz = pos.z - mp.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
