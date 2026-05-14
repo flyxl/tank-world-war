@@ -1,4 +1,4 @@
-import { Scene, Mesh, MeshBuilder, VertexData, PBRMetallicRoughnessMaterial, PBRMaterial, Color3, Vector3, DynamicTexture, Texture } from '@babylonjs/core';
+import { Scene, Mesh, MeshBuilder, VertexData, StandardMaterial, Color3, Vector3, DynamicTexture, Texture } from '@babylonjs/core';
 
 export interface TerrainConfig {
   size: number;
@@ -70,41 +70,31 @@ export class Terrain {
   }
 
   private applyMaterial(): void {
-    const { roughness, primaryTexture, uvScale } = this.config;
+    const { primaryTexture, uvScale, baseColor, detailColor, seed } = this.config;
     const tileScale = uvScale ?? 20;
 
-    if (primaryTexture) {
-      const mat = new PBRMaterial('terrainMat', this.scene);
-      mat.metallic = 0;
-      mat.roughness = roughness;
+    const mat = new StandardMaterial('terrainMat', this.scene);
+    mat.specularColor = new Color3(0.08, 0.08, 0.08);
 
+    if (primaryTexture) {
       const albedo = new Texture(`assets/textures/${primaryTexture}/albedo.jpg`, this.scene);
       albedo.uScale = tileScale;
       albedo.vScale = tileScale;
-      mat.albedoTexture = albedo;
+      mat.diffuseTexture = albedo;
 
       const normal = new Texture(`assets/textures/${primaryTexture}/normal.jpg`, this.scene);
       normal.uScale = tileScale;
       normal.vScale = tileScale;
       mat.bumpTexture = normal;
-
-      const rough = new Texture(`assets/textures/${primaryTexture}/roughness.jpg`, this.scene);
-      rough.uScale = tileScale;
-      rough.vScale = tileScale;
-      mat.metallicTexture = rough;
-      mat.useRoughnessFromMetallicTextureAlpha = false;
-      mat.useRoughnessFromMetallicTextureGreen = true;
-
-      this.mesh.material = mat;
     } else {
-      this.applyFallbackMaterial();
+      mat.diffuseTexture = this.createFallbackTexture(baseColor, detailColor, seed);
     }
 
+    this.mesh.material = mat;
     this.mesh.receiveShadows = true;
   }
 
-  private applyFallbackMaterial(): void {
-    const { baseColor, detailColor, roughness, seed } = this.config;
+  private createFallbackTexture(baseColor: Color3, detailColor: Color3, seed: number): DynamicTexture {
     const texSize = 512;
     const groundTex = new DynamicTexture('terrainTex', texSize, this.scene, true);
     const ctx = groundTex.getContext();
@@ -123,12 +113,7 @@ export class Terrain {
       }
     }
     groundTex.update();
-
-    const mat = new PBRMetallicRoughnessMaterial('terrainMat', this.scene);
-    mat.baseTexture = groundTex;
-    mat.metallic = 0.0;
-    mat.roughness = roughness;
-    this.mesh.material = mat;
+    return groundTex;
   }
 
   getHeightAt(x: number, z: number): number {

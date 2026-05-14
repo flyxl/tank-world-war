@@ -1,4 +1,4 @@
-import { Engine, Scene, Vector3, Color3, Color4, DirectionalLight, HemisphericLight, DefaultRenderingPipeline, FreeCamera, Mesh } from '@babylonjs/core';
+import { Engine, Scene, Vector3, Color3, Color4, DirectionalLight, HemisphericLight, DefaultRenderingPipeline, FreeCamera, Mesh, CubeTexture } from '@babylonjs/core';
 
 import { InputManager } from './core/InputManager';
 import { CameraSystem } from './core/CameraSystem';
@@ -109,7 +109,11 @@ export class Game {
   }
 
   private setupBattleLighting(): void {
-    this.scene.environmentIntensity = 0.3;
+    this.scene.environmentTexture = CubeTexture.CreateFromPrefilteredData(
+      'https://assets.babylonjs.com/environments/environmentSpecular.env',
+      this.scene
+    );
+    this.scene.environmentIntensity = 0.6;
     this.scene.ambientColor = new Color3(0.45, 0.48, 0.52);
 
     const hemiLight = new HemisphericLight('hemiLight', new Vector3(0.2, 1, 0.1), this.scene);
@@ -128,9 +132,6 @@ export class Game {
     fillLight.diffuse = new Color3(0.6, 0.7, 0.85);
     fillLight.specular = new Color3(0.1, 0.1, 0.1);
 
-    this.scene.fogMode = Scene.FOGMODE_EXP2;
-    this.scene.fogDensity = 0.0007;
-    this.scene.fogColor = new Color3(0.7, 0.75, 0.8);
   }
 
   private setupBattlePostProcessing(): void {

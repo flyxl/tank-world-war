@@ -58,7 +58,7 @@ export class Environment {
       const x = MathUtils.randomRange(-80, 80);
       const z = MathUtils.randomRange(-80, 80);
       cactus.position.set(x, terrain.getHeightAt(x, z), z);
-      sg?.addShadowCaster(cactus as unknown as Mesh);
+      this.addShadowCasters(sg, cactus);
       this.objects.push(cactus);
     }
   }
@@ -122,7 +122,7 @@ export class Environment {
       tree.position.set(x, terrain.getHeightAt(x, z), z);
       tree.scaling.setAll(MathUtils.randomRange(0.7, 1.3));
       tree.rotation.y = Math.random() * Math.PI * 2;
-      sg?.addShadowCaster(tree as unknown as Mesh);
+      this.addShadowCasters(sg, tree);
       this.objects.push(tree);
     }
 
@@ -179,7 +179,7 @@ export class Environment {
       const pine = this.createPineTree(trunkMat, pineMat);
       pine.position.set(x, terrain.getHeightAt(x, z), z);
       pine.scaling.setAll(MathUtils.randomRange(0.6, 1.2));
-      sg?.addShadowCaster(pine as unknown as Mesh);
+      this.addShadowCasters(sg, pine);
       this.objects.push(pine);
     }
   }
@@ -261,7 +261,7 @@ export class Environment {
       const tree = this.createTree(trunkMat, leafMat);
       tree.position.set(x, terrain.getHeightAt(x, z), z);
       tree.scaling.setAll(MathUtils.randomRange(0.6, 1.1));
-      sg?.addShadowCaster(tree as unknown as Mesh);
+      this.addShadowCasters(sg, tree);
       this.objects.push(tree);
     }
 
@@ -302,7 +302,7 @@ export class Environment {
       const pine = this.createPineTree(trunkMat, pineMat);
       pine.position.set(x, terrain.getHeightAt(x, z), z);
       pine.scaling.setAll(MathUtils.randomRange(0.5, 1.1));
-      sg?.addShadowCaster(pine as unknown as Mesh);
+      this.addShadowCasters(sg, pine);
       this.objects.push(pine);
     }
 
@@ -428,6 +428,13 @@ export class Environment {
     }
 
     return root;
+  }
+
+  private addShadowCasters(sg: ShadowGenerator | null, node: TransformNode): void {
+    if (!sg) return;
+    node.getChildMeshes().forEach(m => {
+      if (m instanceof Mesh) sg.addShadowCaster(m);
+    });
   }
 
   getColliders(): Mesh[] {
