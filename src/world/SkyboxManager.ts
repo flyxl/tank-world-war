@@ -135,18 +135,43 @@ export class SkyboxManager {
     this.scene.fogDensity = cfg.fogDensity;
     this.scene.fogColor = cfg.fogColor;
 
-    this.skybox = MeshBuilder.CreateCylinder('skybox', {
-      height: 600, diameterTop: 0, diameterBottom: 1200,
-      tessellation: 32, cap: Mesh.NO_CAP,
+    this.skybox = MeshBuilder.CreateSphere('skybox', {
+      diameter: 1000, segments: 32,
     }, this.scene);
-    this.skybox.position.y = 50;
+
+    const topC = this.hexToColor3(cfg.topColor);
+    const midC = this.hexToColor3(cfg.midColor);
+    const botC = this.hexToColor3(cfg.bottomColor);
+    const positions = this.skybox.getVerticesData('position');
+    if (positions) {
+      const vertCount = positions.length / 3;
+      const colors = new Float32Array(vertCount * 4);
+      for (let i = 0; i < vertCount; i++) {
+        const y = positions[i * 3 + 1];
+        const t = (y / 500) + 0.5;
+        let r: number, g: number, b: number;
+        if (t > 0.6) {
+          const s = (t - 0.6) / 0.4;
+          r = midC.r + (topC.r - midC.r) * s;
+          g = midC.g + (topC.g - midC.g) * s;
+          b = midC.b + (topC.b - midC.b) * s;
+        } else {
+          const s = t / 0.6;
+          r = botC.r + (midC.r - botC.r) * s;
+          g = botC.g + (midC.g - botC.g) * s;
+          b = botC.b + (midC.b - botC.b) * s;
+        }
+        colors[i * 4] = r;
+        colors[i * 4 + 1] = g;
+        colors[i * 4 + 2] = b;
+        colors[i * 4 + 3] = 1;
+      }
+      this.skybox.setVerticesData('color', colors);
+    }
 
     this.skyMat = new StandardMaterial('skyboxMat', this.scene);
     this.skyMat.backFaceCulling = false;
     this.skyMat.disableLighting = true;
-
-    const tex = this.createSkyTexture(cfg);
-    this.skyMat.emissiveTexture = tex;
     this.skyMat.emissiveColor = Color3.White();
     this.skyMat.diffuseColor = Color3.Black();
 
@@ -170,7 +195,8 @@ export class SkyboxManager {
 
     const gradient = ctx.createLinearGradient(0, 0, 0, size);
     gradient.addColorStop(0, cfg.topColor);
-    gradient.addColorStop(0.4, cfg.midColor);
+    gradient.addColorStop(0.35, cfg.midColor);
+    gradient.addColorStop(0.5, cfg.bottomColor);
     gradient.addColorStop(1, cfg.bottomColor);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
