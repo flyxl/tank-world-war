@@ -32,6 +32,7 @@ export class HUD {
 
   constructor(scene?: Scene) {
     this.ui = AdvancedDynamicTexture.CreateFullscreenUI('hud', true, scene);
+    this.ui.renderScale = Math.min(window.devicePixelRatio || 1, 2);
     this.buildUI();
   }
 

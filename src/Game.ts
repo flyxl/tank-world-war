@@ -145,32 +145,31 @@ export class Game {
     const pipeline = new DefaultRenderingPipeline('defaultPipeline', false, this.scene, [cam]);
     this.battlePipeline = pipeline;
     pipeline.bloomEnabled = true;
-    pipeline.bloomThreshold = 0.6;
-    pipeline.bloomWeight = 0.35;
-    pipeline.bloomKernel = 64;
-    pipeline.bloomScale = 0.5;
+    pipeline.bloomThreshold = 0.75;
+    pipeline.bloomWeight = 0.2;
+    pipeline.bloomKernel = 32;
+    pipeline.bloomScale = 1;
     pipeline.fxaaEnabled = true;
 
     pipeline.imageProcessingEnabled = true;
     pipeline.imageProcessing.toneMappingEnabled = true;
     pipeline.imageProcessing.toneMappingType = 1;
-    pipeline.imageProcessing.contrast = 1.15;
-    pipeline.imageProcessing.exposure = 1.1;
+    pipeline.imageProcessing.contrast = 1.1;
+    pipeline.imageProcessing.exposure = 1.05;
 
     if (!DeviceDetector.isMobile()) {
       pipeline.imageProcessing.vignetteEnabled = true;
-      pipeline.imageProcessing.vignetteWeight = 1.2;
-      pipeline.chromaticAberrationEnabled = true;
-      pipeline.chromaticAberration.aberrationAmount = 15;
+      pipeline.imageProcessing.vignetteWeight = 0.8;
+      pipeline.chromaticAberrationEnabled = false;
       pipeline.grainEnabled = true;
-      pipeline.grain.intensity = 8;
+      pipeline.grain.intensity = 3;
       pipeline.grain.animated = true;
       pipeline.sharpenEnabled = true;
       pipeline.sharpen.edgeAmount = 0.2;
     }
   }
 
-  private showMainMenu(): void {
+  private showMainMenu(skipToSetup = false): void {
     this.state = GameState.MENU;
 
     if (this.player || this.mapManager) {
@@ -179,7 +178,7 @@ export class Game {
 
     const callbacks: MenuCallbacks = {
       onStartBattle: (mapId, tankType) => {
-        void this.startBattle(mapId, tankType);
+        this.startBattle(mapId, tankType).catch(handleBattleError);
       },
       onOpenGarage: () => this.showGarage(),
       onSettings: () => {},
@@ -187,6 +186,9 @@ export class Game {
 
     this.mainMenu?.dispose();
     this.mainMenu = new MainMenu(callbacks, this.upgradeSystem.progress, this.scene);
+    if (skipToSetup) {
+      this.mainMenu.navigateToBattleSetup();
+    }
   }
 
   private showGarage(): void {
@@ -356,7 +358,7 @@ export class Game {
       }
       this.scene.render();
     } catch (e) {
-      // Silently catch rare render errors to keep the loop alive
+      console.error('[Game] Render loop error:', e);
     }
   }
 
@@ -650,7 +652,7 @@ export class Game {
     this.battleResult = new BattleResultUI(result, () => {
       this.battleResult?.dispose();
       this.battleResult = null;
-      this.showMainMenu();
+      this.showMainMenu(true);
     }, this.scene);
   }
 
@@ -707,4 +709,36 @@ export class Game {
       setTimeout(() => screen.remove(), 500);
     }
   }
+}
+
+export function handleBattleError(error: unknown): void {
+  console.error('[Game] Battle initialization failed:', error);
+
+  const existing = document.getElementById('battleErrorOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'battleErrorOverlay';
+  Object.assign(overlay.style, {
+    position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+    background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', zIndex: '9999',
+    color: '#fff', fontFamily: 'sans-serif',
+  });
+
+  const msg = document.createElement('p');
+  msg.style.cssText = 'font-size:1.2rem;margin-bottom:1rem;';
+  msg.textContent = `战斗加载失败: ${error instanceof Error ? error.message : String(error)}`;
+  overlay.appendChild(msg);
+
+  const btn = document.createElement('button');
+  btn.style.cssText = 'padding:10px 24px;font-size:1rem;cursor:pointer;border:none;border-radius:6px;background:#e94560;color:#fff;';
+  btn.textContent = '返回主菜单';
+  btn.addEventListener('click', () => {
+    overlay.remove();
+    window.location.reload();
+  });
+  overlay.appendChild(btn);
+
+  document.body.appendChild(overlay);
 }

@@ -287,6 +287,10 @@ export class MainMenu {
     }
   }
 
+  navigateToBattleSetup(): void {
+    this.navigateTo('battle-setup');
+  }
+
   show(): void {
     this.root.style.display = 'flex';
   }

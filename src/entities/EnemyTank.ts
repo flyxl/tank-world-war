@@ -99,7 +99,7 @@ export class EnemyTank extends Tank {
         this.aimAtTarget(dt);
         this.maintainDistance(dt, this.attackRange * 0.7);
 
-        if (this.canFire() && distToTarget < this.attackRange) {
+        if (this.canFire() && distToTarget < this.attackRange && this.isAimConverged()) {
           if (Math.random() < this.accuracy) {
             this.fire();
             this.wantsFire = true;
@@ -170,15 +170,43 @@ export class EnemyTank extends Tank {
     const diff = MathUtils.normalizeAngle(normalizedTarget - this.turret.rotation.y);
     this.turret.rotation.y += MathUtils.clamp(diff, -this.config.turretSpeed * dt, this.config.turretSpeed * dt);
 
-    // Elevation toward target
     const firePos = this.firePoint.getAbsolutePosition();
     const toTarget = this.target.root.position.subtract(firePos);
     const hDist = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
     if (hDist > 0.5) {
-      const targetPitch = MathUtils.clamp(Math.atan2(-toTarget.y, hDist), -0.25, 0.12);
+      const targetPitch = this.calcBallisticPitch(hDist, toTarget.y);
       const pitchDiff = targetPitch - this.turret.rotation.x;
-      this.turret.rotation.x += MathUtils.clamp(pitchDiff, -this.config.turretSpeed * dt, this.config.turretSpeed * dt);
+      const elevSpeed = this.config.turretSpeed * 3;
+      this.turret.rotation.x += MathUtils.clamp(pitchDiff, -elevSpeed * dt, elevSpeed * dt);
     }
+  }
+
+  private calcBallisticPitch(hDist: number, dy: number): number {
+    const v = 40;
+    const g = 9.81;
+    const v2 = v * v;
+    const disc = v2 * v2 - g * (g * hDist * hDist + 2 * dy * v2);
+    let angle: number;
+    if (disc < 0) {
+      angle = Math.atan2(dy, hDist) + 0.05;
+    } else {
+      angle = Math.atan2(v2 - Math.sqrt(disc), g * hDist);
+    }
+    return MathUtils.clamp(-angle, -0.4, 0.15);
+  }
+
+  private isAimConverged(): boolean {
+    if (!this.target) return false;
+    const firePos = this.firePoint.getAbsolutePosition();
+    const toTarget = this.target.root.position.subtract(firePos);
+    const hDist = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+    if (hDist < 1) return true;
+    const targetPitch = this.calcBallisticPitch(hDist, toTarget.y);
+    const pitchErr = Math.abs(targetPitch - this.turret.rotation.x);
+    const dirToTarget = this.target.root.position.subtract(this.root.position);
+    const targetYaw = Math.atan2(dirToTarget.x, dirToTarget.z) - this.root.rotation.y;
+    const yawErr = Math.abs(MathUtils.normalizeAngle(targetYaw - this.turret.rotation.y));
+    return pitchErr < 0.05 && yawErr < 0.1;
   }
 
   private maintainDistance(dt: number, idealDist: number): void {
