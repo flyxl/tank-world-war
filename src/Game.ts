@@ -339,7 +339,15 @@ export class Game {
       this.spawnPickup();
     }
 
-    await this.player.applyExternalPlayerModel(this.mapManager, tankType);
+    try {
+      await withTimeout(
+        this.player.applyExternalPlayerModel(this.mapManager, tankType),
+        15000,
+        'Model loading'
+      );
+    } catch (e) {
+      console.warn('[Game] Model load issue, using fallback:', e);
+    }
     if (this.shadowSystem) {
       this.player.root.getChildMeshes().forEach((m) => {
         if (m instanceof Mesh) this.shadowSystem!.addCaster(m);
@@ -714,6 +722,9 @@ export class Game {
 export function handleBattleError(error: unknown): void {
   console.error('[Game] Battle initialization failed:', error);
 
+  const loadingEl = document.getElementById('loadingOverlay');
+  if (loadingEl) loadingEl.remove();
+
   const existing = document.getElementById('battleErrorOverlay');
   if (existing) existing.remove();
 
@@ -741,4 +752,12 @@ export function handleBattleError(error: unknown): void {
   overlay.appendChild(btn);
 
   document.body.appendChild(overlay);
+}
+
+export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }

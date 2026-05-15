@@ -6,6 +6,49 @@ import { Projectile } from '../entities/Projectile';
 import { ParticleManager } from './ParticleManager';
 import { AudioManager, SoundType } from '../core/AudioManager';
 
+export interface ObstacleBox {
+  minX: number; maxX: number;
+  minY: number; maxY: number;
+  minZ: number; maxZ: number;
+}
+
+export function checkObstacleHit(
+  p0: { x: number; y: number; z: number },
+  p1: { x: number; y: number; z: number },
+  obstacles: ObstacleBox[]
+): boolean {
+  const dx = p1.x - p0.x;
+  const dy = p1.y - p0.y;
+  const dz = p1.z - p0.z;
+
+  for (const box of obstacles) {
+    let tMin = 0, tMax = 1;
+
+    const axes = [
+      { origin: p0.x, dir: dx, bMin: box.minX, bMax: box.maxX },
+      { origin: p0.y, dir: dy, bMin: box.minY, bMax: box.maxY },
+      { origin: p0.z, dir: dz, bMin: box.minZ, bMax: box.maxZ },
+    ];
+
+    let miss = false;
+    for (const { origin, dir, bMin, bMax } of axes) {
+      if (Math.abs(dir) < 1e-10) {
+        if (origin < bMin || origin > bMax) { miss = true; break; }
+      } else {
+        let t1 = (bMin - origin) / dir;
+        let t2 = (bMax - origin) / dir;
+        if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; }
+        tMin = Math.max(tMin, t1);
+        tMax = Math.min(tMax, t2);
+        if (tMin > tMax) { miss = true; break; }
+      }
+    }
+
+    if (!miss && tMin <= tMax) return true;
+  }
+  return false;
+}
+
 interface FlashEffect {
   mesh: Mesh;
   age: number;
@@ -53,6 +96,8 @@ export class CombatSystem {
   }
 
   update(dt: number): void {
+    const obstacleBoxes = this.getObstacleBoxes();
+
     for (const proj of this.projectiles) {
       if (!proj.alive) continue;
 
@@ -61,6 +106,12 @@ export class CombatSystem {
       const curPos = proj.mesh.position.clone();
 
       if (curPos.y <= -0.5) {
+        this.particles.createHitSpark(curPos);
+        proj.alive = false;
+        continue;
+      }
+
+      if (checkObstacleHit(prevPos, curPos, obstacleBoxes)) {
         this.particles.createHitSpark(curPos);
         proj.alive = false;
         continue;
@@ -211,6 +262,26 @@ export class CombatSystem {
     });
   }
 
+  private obstacleNames = ['building', 'rock', 'snowRock', 'trunk', 'cTrunk', 'hedge', 'bunker', 'wall', 'sandbag'];
+  private cachedBoxes: ObstacleBox[] | null = null;
+
+  private getObstacleBoxes(): ObstacleBox[] {
+    if (this.cachedBoxes) return this.cachedBoxes;
+    const boxes: ObstacleBox[] = [];
+    for (const mesh of this.scene.meshes) {
+      const n = mesh.name;
+      if (!this.obstacleNames.some(prefix => n.startsWith(prefix))) continue;
+      if (!mesh.getBoundingInfo) continue;
+      const bi = mesh.getBoundingInfo();
+      const min = bi.boundingBox.minimumWorld;
+      const max = bi.boundingBox.maximumWorld;
+      if (max.x - min.x < 0.3) continue;
+      boxes.push({ minX: min.x, maxX: max.x, minY: min.y, maxY: max.y, minZ: min.z, maxZ: max.z });
+    }
+    this.cachedBoxes = boxes;
+    return boxes;
+  }
+
   private sweepTest(p0: Vector3, p1: Vector3, tank: Tank): boolean {
     const s = tank.config.bodyScale;
     const center = tank.root.position.clone();
@@ -251,5 +322,6 @@ export class CombatSystem {
     this.projectiles = [];
     this.flashEffects.forEach((f) => f.mesh.dispose());
     this.flashEffects = [];
+    this.cachedBoxes = null;
   }
 }
