@@ -1,0 +1,14 @@
+{"type":"server-started","port":62351,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:62351","screen_dir":"/Users/flyxl/code/tank/.superpowers/brainstorm/13768-1778662444/content","state_dir":"/Users/flyxl/code/tank/.superpowers/brainstorm/13768-1778662444/state"}
+{"type":"screen-added","file":"/Users/flyxl/code/tank/.superpowers/brainstorm/13768-1778662444/content/map-designs.html"}
+{"source":"user-event","type":"click","text":"升级\n      沙漠战场 Desert\n      PBR沙地纹理 + 岩石混合 · HDR晴朗天空 · 沙丘起伏 · 仙人掌→沙漠灌木模型 · 飞沙粒子 · 热浪后处理","choice":"desert","id":null,"timestamp":1778664086250}
+{"source":"user-event","type":"click","text":"升级\n      沙漠战场 Desert\n      PBR沙地纹理 + 岩石混合 · HDR晴朗天空 · 沙丘起伏 · 仙人掌→沙漠灌木模型 · 飞沙粒子 · 热浪后处理","choice":"desert","id":null,"timestamp":1778664087322}
+{"source":"user-event","type":"click","text":"升级\n      雪地冻原 Snow\n      积雪PBR纹理 · 阴沉冬日天空 · 松树+雪覆盖模型 · 冰面区域 · 飘雪增强 · 雪地车辙","choice":"snow","id":null,"timestamp":1778664089071}
+{"source":"user-event","type":"click","text":"升级\n      城市废墟 Urban\n      碎石/沥青PBR地面 · 阴沉天空 · 真实废墟建筑模型 · 可破坏沙袋/铁丝网 · 弹坑 · 尘土粒子","choice":"urban","id":null,"timestamp":1778664090246}
+{"source":"user-event","type":"click","text":"新增\n      斯大林格勒 Stalingrad\n      碎砖/灰尘PBR地面 · 红色浓烟天空 · 大量废墟建筑 · 可破坏结构 · 火焰+余烬粒子 · 浓雾","choice":"stalingrad","id":null,"timestamp":1778664092989}
+{"source":"user-event","type":"click","text":"新增\n      诺曼底海滩 Normandy\n      湿沙→草地过渡纹理 · 海水系统(反射+波浪) · 碉堡/反登陆桩 · 悬崖地形 · 海浪泡沫粒子 · 多云天空","choice":"normandy","id":null,"timestamp":1778664093916}
+{"source":"user-event","type":"click","text":"新增\n      库尔斯克 Kursk\n      草原/麦田PBR纹理 · 广阔晴朗天空 · 浅丘地形 · 壕沟/散兵坑 · 稀疏树木 · 扬尘粒子","choice":"kursk","id":null,"timestamp":1778664095230}
+{"source":"user-event","type":"click","text":"新增\n      阿登森林 Ardennes\n      雪地/松针PBR纹理 · 密集松林 · 大雪天气 · 狭窄林间道路 · 能见度低 · 雪花+薄雾粒子","choice":"ardennes","id":null,"timestamp":1778664095823}
+{"source":"user-event","type":"click","text":"新增\n      库尔斯克 Kursk\n      草原/麦田PBR纹理 · 广阔晴朗天空 · 浅丘地形 · 壕沟/散兵坑 · 稀疏树木 · 扬尘粒子","choice":"kursk","id":null,"timestamp":1778664098578}
+{"source":"user-event","type":"click","text":"新增\n      库尔斯克 Kursk\n      草原/麦田PBR纹理 · 广阔晴朗天空 · 浅丘地形 · 壕沟/散兵坑 · 稀疏树木 · 扬尘粒子","choice":"kursk","id":null,"timestamp":1778664098820}
+{"type":"screen-added","file":"/Users/flyxl/code/tank/.superpowers/brainstorm/13768-1778662444/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}

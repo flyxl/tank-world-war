@@ -1,0 +1,137 @@
+<h2>8 张战场地图设计总览</h2>
+<p class="subtitle">点击任意地图查看详细设计。上方 4 张为现有地图升级，下方 4 张为新增二战地图。</p>
+
+<style>
+  .map-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .map-card { background: #1a1a2e; border: 2px solid #333; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s; }
+  .map-card:hover { border-color: #4a9eff; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(74,158,255,0.2); }
+  .map-preview { height: 180px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .map-info { padding: 16px; }
+  .map-info h3 { margin: 0 0 6px; color: #fff; font-size: 18px; }
+  .map-info p { margin: 0; color: #aaa; font-size: 13px; line-height: 1.5; }
+  .map-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-bottom: 8px; }
+  .tag-upgrade { background: #2d5a27; color: #8fdf82; }
+  .tag-new { background: #5a2727; color: #df8282; }
+  .divider { grid-column: 1 / -1; border-top: 1px solid #333; margin: 8px 0; padding-top: 8px; }
+  .divider-label { color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; }
+
+  /* Desert */
+  .desert-bg { background: linear-gradient(180deg, #c4a35a 0%, #d4b86a 40%, #b8953f 60%, #a0822e 100%); }
+  .desert-bg::after { content: '🏜️'; font-size: 60px; }
+
+  /* Urban */
+  .urban-bg { background: linear-gradient(180deg, #8a9aa4 0%, #6b7b85 30%, #555 60%, #444 100%); }
+  .urban-bg::after { content: '🏚️'; font-size: 60px; }
+
+  /* Forest */
+  .forest-bg { background: linear-gradient(180deg, #87ceeb 0%, #4a8c3f 30%, #3a7a2f 60%, #2d6622 100%); }
+  .forest-bg::after { content: '🌲'; font-size: 60px; }
+
+  /* Snow */
+  .snow-bg { background: linear-gradient(180deg, #c8d8e8 0%, #e8eef4 30%, #dde6ed 60%, #c0d0dd 100%); }
+  .snow-bg::after { content: '❄️'; font-size: 60px; }
+
+  /* Normandy */
+  .normandy-bg { background: linear-gradient(180deg, #7a8a94 0%, #6a7a84 20%, #c4a87a 60%, #3a6a9a 100%); }
+  .normandy-bg::after { content: '⚓'; font-size: 60px; }
+
+  /* Stalingrad */
+  .stalingrad-bg { background: linear-gradient(180deg, #4a3a3a 0%, #5a4040 30%, #6a4a3a 60%, #3a2a2a 100%); }
+  .stalingrad-bg::after { content: '🔥'; font-size: 60px; }
+
+  /* Kursk */
+  .kursk-bg { background: linear-gradient(180deg, #87ceeb 0%, #a8c84a 30%, #98b83a 60%, #88a82a 100%); }
+  .kursk-bg::after { content: '🌾'; font-size: 60px; }
+
+  /* Ardennes */
+  .ardennes-bg { background: linear-gradient(180deg, #8a9aaa 0%, #2a5a2a 30%, #e8eef4 60%, #dde6ed 100%); }
+  .ardennes-bg::after { content: '🌨️'; font-size: 60px; }
+</style>
+
+<div class="map-grid">
+  <!-- Existing maps upgrade -->
+  <div style="grid-column: 1/-1;"><span class="divider-label">▼ 现有地图升级</span></div>
+
+  <div class="map-card" data-choice="desert" onclick="toggleSelect(this)">
+    <div class="map-preview desert-bg"></div>
+    <div class="map-info">
+      <span class="map-tag tag-upgrade">升级</span>
+      <h3>沙漠战场 Desert</h3>
+      <p>PBR沙地纹理 + 岩石混合 · HDR晴朗天空 · 沙丘起伏 · 仙人掌→沙漠灌木模型 · 飞沙粒子 · 热浪后处理</p>
+    </div>
+  </div>
+
+  <div class="map-card" data-choice="urban" onclick="toggleSelect(this)">
+    <div class="map-preview urban-bg"></div>
+    <div class="map-info">
+      <span class="map-tag tag-upgrade">升级</span>
+      <h3>城市废墟 Urban</h3>
+      <p>碎石/沥青PBR地面 · 阴沉天空 · 真实废墟建筑模型 · 可破坏沙袋/铁丝网 · 弹坑 · 尘土粒子</p>
+    </div>
+  </div>
+
+  <div class="map-card" data-choice="forest" onclick="toggleSelect(this)">
+    <div class="map-preview forest-bg"></div>
+    <div class="map-info">
+      <span class="map-tag tag-upgrade">升级</span>
+      <h3>森林草原 Forest</h3>
+      <p>草地/泥土PBR纹理 · 晴朗HDR天空 · 真实树木模型 · 灌木/草丛 · 落叶环境粒子 · 树冠阴影</p>
+    </div>
+  </div>
+
+  <div class="map-card" data-choice="snow" onclick="toggleSelect(this)">
+    <div class="map-preview snow-bg"></div>
+    <div class="map-info">
+      <span class="map-tag tag-upgrade">升级</span>
+      <h3>雪地冻原 Snow</h3>
+      <p>积雪PBR纹理 · 阴沉冬日天空 · 松树+雪覆盖模型 · 冰面区域 · 飘雪增强 · 雪地车辙</p>
+    </div>
+  </div>
+
+  <!-- New maps -->
+  <div style="grid-column: 1/-1; margin-top: 12px;"><span class="divider-label">▼ 新增二战战场</span></div>
+
+  <div class="map-card" data-choice="normandy" onclick="toggleSelect(this)">
+    <div class="map-preview normandy-bg"></div>
+    <div class="map-info">
+      <span class="map-tag tag-new">新增</span>
+      <h3>诺曼底海滩 Normandy</h3>
+      <p>湿沙→草地过渡纹理 · 海水系统(反射+波浪) · 碉堡/反登陆桩 · 悬崖地形 · 海浪泡沫粒子 · 多云天空</p>
+    </div>
+  </div>
+
+  <div class="map-card" data-choice="stalingrad" onclick="toggleSelect(this)">
+    <div class="map-preview stalingrad-bg"></div>
+    <div class="map-info">
+      <span class="map-tag tag-new">新增</span>
+      <h3>斯大林格勒 Stalingrad</h3>
+      <p>碎砖/灰尘PBR地面 · 红色浓烟天空 · 大量废墟建筑 · 可破坏结构 · 火焰+余烬粒子 · 浓雾</p>
+    </div>
+  </div>
+
+  <div class="map-card" data-choice="kursk" onclick="toggleSelect(this)">
+    <div class="map-preview kursk-bg"></div>
+    <div class="map-info">
+      <span class="map-tag tag-new">新增</span>
+      <h3>库尔斯克 Kursk</h3>
+      <p>草原/麦田PBR纹理 · 广阔晴朗天空 · 浅丘地形 · 壕沟/散兵坑 · 稀疏树木 · 扬尘粒子</p>
+    </div>
+  </div>
+
+  <div class="map-card" data-choice="ardennes" onclick="toggleSelect(this)">
+    <div class="map-preview ardennes-bg"></div>
+    <div class="map-info">
+      <span class="map-tag tag-new">新增</span>
+      <h3>阿登森林 Ardennes</h3>
+      <p>雪地/松针PBR纹理 · 密集松林 · 大雪天气 · 狭窄林间道路 · 能见度低 · 雪花+薄雾粒子</p>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 20px; padding: 16px; background: #1a1a2e; border-radius: 8px; border-left: 3px solid #4a9eff;">
+  <p style="color: #ccc; margin: 0; font-size: 14px;">
+    <strong style="color: #4a9eff;">💡 地图尺寸:</strong> 所有地图保持 200×200 单位，地形细分 80×80。<br>
+    <strong style="color: #4a9eff;">💡 出生点:</strong> 玩家出生点在地图一侧，5个敌方出生点分布在对侧和两翼。<br>
+    <strong style="color: #4a9eff;">💡 性能:</strong> 移动端环境物体密度降低 30%，水面效果简化，环境粒子关闭。
+  </p>
+</div>
